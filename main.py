@@ -7,5 +7,5 @@ if __name__ == '__main__':
     user_name = os.environ.get('USER_EMAIL', '')
     password = os.environ.get('PASS_EMAIL', '')
 
-    App.execute(user_name, password)sasaa
+    App.execute(user_name, password)
     
