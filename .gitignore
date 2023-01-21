@@ -1,0 +1,18 @@
+.ambiente_virtual
+pylintrc
+downloads
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# ignora as configurações do vscode
+.vscode
+
+# ignora os arquivos .env
+.env
+
+temp/*.*

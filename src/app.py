@@ -5,10 +5,7 @@ from .email_handler import EmailHandler
 @dataclass
 class App:
     @staticmethod
-    def execute(user_name: str, password: str)->None:
-        email = EmailHandler(user_name, password)
+    def execute(smtp_server: str, user_name: str, password: str, download_folder: str)->None:
+        email = EmailHandler(smtp_server, user_name, password, download_folder) 
 
         email.execute()
-        
-    
-   
