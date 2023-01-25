@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from src.exception_handler import ApplicationException
+from src.infra.exception_handler import ApplicationException
 from src.app import App
 
 if __name__ == '__main__':
