@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .email_handler import EmailHandler
+from src.email_handler import EmailHandler
 
 @dataclass
 class App:

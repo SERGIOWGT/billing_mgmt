@@ -9,7 +9,7 @@ import quopri
 import re
 from typing import List
 
-from .exception_handler import ApplicationException
+from src.infra.exception_handler import ApplicationException
 
 
 @dataclass
