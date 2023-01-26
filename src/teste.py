@@ -9,6 +9,8 @@ file_name5= 'docs/meo.pdf'
 file_name6= 'docs/aguasdegaia_sample.pdf'
 all_text = PdfExtractor().get_text(file_name6)
 
+#print(all_text)
+
 extrator = ExtratorContaConsumoFactory().execute(all_text)
 if (extrator):
     info_conta = extrator.get_info(all_text)
