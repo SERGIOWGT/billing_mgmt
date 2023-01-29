@@ -27,7 +27,7 @@ class PdfExtractor:
         for index in range(page_count):
             page = pdf.get_page(index)
             textpage = page.get_textpage()
-            text_all = textpage.get_text_range()
+            text_all = textpage.get_text_range().encode('latin-1')
             page_content = PageContent()
             if break_lines:
                 page_content.lines = text_all.split('\n')
@@ -48,6 +48,7 @@ class PdfExtractor:
         for index in range(page_count):
             page = pdf.get_page(index)
             textpage = page.get_textpage()
-            all_text += ' ' + textpage.get_text_range()
+            _text = textpage.get_text_range()
+            all_text += ' ' + _text
             
         return all_text

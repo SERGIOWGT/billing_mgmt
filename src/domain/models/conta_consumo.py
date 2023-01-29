@@ -1,25 +1,14 @@
 from dataclasses import dataclass
-from enum import IntEnum
-
-class ConcessionariaEnum(IntEnum):
-    NOS = 1
-    MEO = 2
-    AGUAS_DE_GAIA = 3
-    EDP = 4
-    VODAFONE = 5
-    ALTICE = 6
-
-class TipoServicoEnum(IntEnum):
-    AGUA = 1
-    LUZ = 2
-    INTERNET = 3
+from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
 
 @dataclass
 class ContaConsumo:
     concessionaria: ConcessionariaEnum
     tipo_servico: TipoServicoEnum
+    id_contribuinte = ''
+    id_cliente = ''
+    nome_contribuinte = ''
+    periodo_referencia = ''
     data_emissao = ''
     data_vencimento = ''
     valor = ''
-    id_contribuinte = ''
-    id_cliente = ''

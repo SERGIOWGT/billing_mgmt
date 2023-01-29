@@ -1,13 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from domain.entities.extrator_conta_base import ExtratorContaConsumoBase
-from domain.entities.extrator_conta_consumo_nos import ExtratorContaConsumoNOS
-from domain.entities.extrator_conta_consumo_edp import ExtratorContaConsumoEDP
-from domain.entities.extrator_conta_consumo_vodafone import ExtratorContaConsumoVodafone
-from domain.entities.extrator_conta_consumo_altice import ExtratorContaConsumoAltice
-from domain.entities.extrator_conta_consumo_aguas import ExtratorContaConsumoAguasDeGaia
-from domain.entities.extrator_conta_consumo_meo import ExtratorContaConsumoMEO
+from src.domain.entities import *
 
 @dataclass
 class ExtratorContaConsumoFactory:
@@ -17,7 +11,7 @@ class ExtratorContaConsumoFactory:
            return ExtratorContaConsumoNOS()
         elif (texto.find('EDP Comercial') > 0):
             return ExtratorContaConsumoEDP()
-        elif (texto.find('My Vodafone ') > 0):
+        elif (texto.find('My Vodafone') > 0):
             return ExtratorContaConsumoVodafone()
         elif (texto.find('altice-empresas.pt') > 0):
             return ExtratorContaConsumoAltice()

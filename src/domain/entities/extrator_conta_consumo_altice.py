@@ -1,5 +1,5 @@
-from domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
-from domain.entities.extrator_conta_base import ExtratorContaConsumoBase
+from src.domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
+from .extrator_conta_base import ExtratorContaConsumoBase
 
 class ExtratorContaConsumoAltice(ExtratorContaConsumoBase):
     def get_info(self, texto: str) -> ContaConsumo:

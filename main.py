@@ -11,15 +11,23 @@ if __name__ == '__main__':
     base_folder=os.environ.get('BASE_FOLDER', '')
     email_destination_folder = os.environ.get('EMAIL_DESTINATION_FOLDER', '')
     download_folder = os.path.join(base_folder, 'downloads')
+    
+    app = App(download_folder)
 
     try:
         ApplicationException.when(not os.path.exists(download_folder), f'Path does not exist. [{download_folder}]')
-        count_email = App.execute(imap_server, user_name, password, download_folder, email_destination_folder)
+        count_email = app.download_files(imap_server, user_name, password, download_folder)
         if count_email == 0:
-            print('Nenhum arquivo processado')
+            print('Nenhum arquivo baixado')
         elif count_email == 1:
-            print('Um arquivo processado')
+            print('Um arquivo baixado')
         else:
-            print(f'{count_email} arquivos processados')
+            print(f'{count_email} arquivos baixados')
+
+    except Exception as error:
+        print(str(error))
+
+    try:
+        app.process_downloaded_files()
     except Exception as error:
         print(str(error))

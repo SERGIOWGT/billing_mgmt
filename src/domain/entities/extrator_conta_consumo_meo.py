@@ -1,16 +1,17 @@
-from domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
-from domain.entities.extrator_conta_base import ExtratorContaConsumoBase
+from src.domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
+from .extrator_conta_base import ExtratorContaConsumoBase
 
 class ExtratorContaConsumoMEO(ExtratorContaConsumoBase):
     def get_info(self, texto: str) -> ContaConsumo:
         conta_consumo = ContaConsumo(concessionaria=ConcessionariaEnum.MEO, tipo_servico=TipoServicoEnum.INTERNET)
+        texto = texto.replace('†', ' ').replace('∫', 'o.')
 
-        conta_consumo.data_emissao = self.get_data(texto, 'Data†de†Emiss„o:','N∫†Cliente:')
-        conta_consumo.valor = self.get_data(texto, 'TOTAL†DA†FATURA Ä†','IVA')
-        conta_consumo.id_cliente = self.get_data(texto, 'N∫†Cliente:','N∫†Contribuinte:')
-        conta_consumo.id_contribuinte = self.get_data(texto, 'N∫†Contribuinte:','N∫†Conta:')
-        conta_consumo.data_vencimento = self.get_data(texto, 'Débito direto a partir do dia:', 'IBAN da sua conta bancária')
-        print(conta_consumo.data_emissao + ' - ' + conta_consumo.valor + ' - ' + conta_consumo.id_cliente + ' - ' + conta_consumo.id_contribuinte + ' - ' + conta_consumo.data_vencimento)
+        conta_consumo.id_cliente = self.get_data(texto, 'No. Cliente:', '\r\n')
+        conta_consumo.id_contribuinte = self.get_data(texto, 'No. Contribuinte:', '\r\n')
+        conta_consumo.nome_contribuinte = ''
+
+        conta_consumo.periodo_referencia = ''
+        conta_consumo.data_emissao = self.get_data(texto, 'Data de Emiss„o:', '\r\n')
+        conta_consumo.data_vencimento = self.get_data(texto, 'DÈbito banc·rio a partir de:', '\r\n')
+        conta_consumo.valor = self.get_data(texto, 'TOTAL DA FATURA Ä', '\r\n')
         return conta_consumo
-
-

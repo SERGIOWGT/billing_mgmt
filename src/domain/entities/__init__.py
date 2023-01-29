@@ -1,0 +1,7 @@
+from .extrator_conta_base import ExtratorContaConsumoBase
+from .extrator_conta_consumo_nos import ExtratorContaConsumoNOS
+from .extrator_conta_consumo_edp import ExtratorContaConsumoEDP
+from .extrator_conta_consumo_vodafone import ExtratorContaConsumoVodafone
+from .extrator_conta_consumo_altice import ExtratorContaConsumoAltice
+from .extrator_conta_consumo_aguas import ExtratorContaConsumoAguasDeGaia
+from .extrator_conta_consumo_meo import ExtratorContaConsumoMEO
