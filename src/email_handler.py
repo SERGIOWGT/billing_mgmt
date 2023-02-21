@@ -88,9 +88,9 @@ class EmailHandler:
             return encoded_words
 
         charset, encoding, encoded_text = re.match(encoded_word_regex, encoded_words).groups()
-        if encoding is 'B':
+        if encoding == 'B':
             byte_string = base64.b64decode(encoded_text)
-        elif encoding is 'Q':
+        elif encoding == 'Q':
             byte_string = quopri.decodestring(encoded_text)
 
         return byte_string.decode(charset)
@@ -124,3 +124,4 @@ class EmailHandler:
     def move(self, message_uid: int, destination_folder: str) -> None:
         (result, _) = self.imap_session.uid('move', message_uid, destination_folder)
         ApplicationException.when(result != 'OK', f'Error moving message {message_uid}')
+

@@ -1,3 +1,4 @@
+from unidecode import unidecode
 from typing import List
 import pypdfium2 as pdfium
 from dataclasses import dataclass, field
@@ -51,4 +52,6 @@ class PdfExtractor:
             _text = textpage.get_text_range()
             all_text += ' ' + _text
             
+        all_text = unidecode(all_text)
+        
         return all_text

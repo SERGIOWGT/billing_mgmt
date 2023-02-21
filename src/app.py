@@ -15,8 +15,9 @@ class App:
     def __init__(self, base_folder: str):
         self.base_folder = base_folder
         self.downloaded_folder = base_folder
-        self.processed_folder = os.path.join(self.base_folder, 'downloads//processados')
-        self.errors_folder = os.path.join(self.base_folder, 'downloads//errors')
+        self.processed_folder = self.downloaded_folder + '/processados'
+        self.errors_folder = self.downloaded_folder + '/erros'
+        self.ignored_folder=self.downloaded_folder + '/ignorados'
 
 
     def download_files(self, smtp_server: str, user_name: str, password: str, download_email_folder: str) -> int:
@@ -33,7 +34,7 @@ class App:
                 file_list = email.get_save_attachments(message_uid, download_email_folder)
 
                 num_emails += 1
-                email.move(message_uid, self.base_folder)
+                email.move(message_uid, "PROCESSADOS")
                
                 for file_name in file_list:
                     print(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.')
@@ -41,24 +42,33 @@ class App:
         email.logout()
         return num_emails
 
-    def _move_file(self, file_name: str):
-        pass
+    def _move_file(self, origin_file_name: str, destination_file_name: str):
+        try:
+            os.rename(origin_file_name, destination_file_name)
+        except:
+            pass
+            
 
     def process_downloaded_files(self) -> Any:
 
-        files = [f for f in os.listdir(self.downloaded_folder) ]
+        files = [f.upper() for f in os.listdir(self.downloaded_folder) ]
         for file_name in files:
 
-            if not file_name.endswith('.pdf'):
-                #self._move_file(file_name)
-                continue
 
             complete_file_name = os.path.join(self.downloaded_folder, file_name)
+            if not file_name.endswith('.PDF'):
+                destination = os.path.join(self.ignored_folder, file_name)
+                self._move_file(complete_file_name, destination)
+                continue
+
+
+            print(file_name)
+            
             all_text = PdfExtractor().get_text(complete_file_name)
             extrator = ExtratorContaConsumoFactory().execute(all_text)
             if (extrator):
                 info_conta = extrator.get_info(all_text)
-                
+
                 print('*' * 100)
                 print(f'Tipo Servico: {info_conta.tipo_servico.name} Concessionária:  {info_conta.concessionaria.name}')
                 print(f'Id Cliente: {info_conta.id_cliente} Id Contribuinte: {info_conta.id_contribuinte} Nome: {info_conta.nome_contribuinte}')
@@ -66,8 +76,10 @@ class App:
                 print(f'Emissao: {info_conta.data_emissao} Vencimento: {info_conta.data_vencimento} Valor: {info_conta.valor}')
                 print('*' * 100)
                 input('press to continue')
-                
-                
-
+                destination = os.path.join(self.processed_folder, file_name)
+                self._move_file(complete_file_name, destination)
+            else:
+                destination = os.path.join(self.errors_folder, file_name)
+                self._move_file(complete_file_name, destination)
 
         return Any
