@@ -13,7 +13,7 @@ class ExtratorContaConsumoFactory:
             return ExtratorContaConsumoEDP()
         elif (texto.find('My Vodafone') > 0):
             return ExtratorContaConsumoVodafone()
-        elif (texto.find('altice-empresas.pt') > 0):
+        elif (texto.find('961 001 620') > 0):
             return ExtratorContaConsumoAltice()
         elif (texto.find('www.aguasgaia.pt') > 0):
             return ExtratorContaConsumoAguasDeGaia()

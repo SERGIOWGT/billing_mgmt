@@ -75,7 +75,7 @@ class App:
                 print(f'Mes / periodo referencia: {info_conta.periodo_referencia}')
                 print(f'Emissao: {info_conta.data_emissao} Vencimento: {info_conta.data_vencimento} Valor: {info_conta.valor}')
                 print('*' * 100)
-                input('press to continue')
+                input('press <ENTER> to continue')
                 destination = os.path.join(self.processed_folder, file_name)
                 self._move_file(complete_file_name, destination)
             else:
