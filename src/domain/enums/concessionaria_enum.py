@@ -1,9 +1,10 @@
-from enum import IntEnum
+from enum import IntEnum, auto
 
 class ConcessionariaEnum(IntEnum):
-    NOS = 1
-    MEO = 2
-    AGUAS_DE_GAIA = 3
-    EDP = 4
-    VODAFONE = 5
-    ALTICE = 6
+    NOS = auto()
+    MEO = auto()
+    AGUAS_DE_GAIA = auto()
+    EDP = auto()
+    VODAFONE = auto()
+    ALTICE = auto()
+    AGUAS_DE_PORTO = auto()

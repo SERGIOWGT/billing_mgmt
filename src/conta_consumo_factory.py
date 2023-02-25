@@ -8,16 +8,24 @@ class ExtratorContaConsumoFactory:
     @staticmethod
     def execute(texto :str)-> Optional[ExtratorContaConsumoBase]:
         if (texto.find('Esta é a sua fatura NOS') > 0):
-           return ExtratorContaConsumoNOS()
-        elif (texto.find('EDP Comercial') > 0):
+            return ExtratorContaConsumoNOS()
+
+        if (texto.find('NIPC 503504564') > 0):
             return ExtratorContaConsumoEDP()
-        elif (texto.find('My Vodafone') > 0):
+
+        if (texto.find('My Vodafone') > 0):
             return ExtratorContaConsumoVodafone()
-        elif (texto.find('961 001 620') > 0):
+
+        if (texto.find('961 001 626') > 0):
             return ExtratorContaConsumoAltice()
-        elif (texto.find('www.aguasgaia.pt') > 0):
+
+        if (texto.find('www.aguasgaia.pt') > 0):
             return ExtratorContaConsumoAguasDeGaia()
-        elif (texto.find('meo.pt') > 0):
+
+        if (texto.find('meo.pt') > 0):
             return ExtratorContaConsumoMEO()
+
+        if (texto.find('EM - NIPC 507 718 666') > 0):
+            return ExtratorContaConsumoAguasDePorto()
 
         return None

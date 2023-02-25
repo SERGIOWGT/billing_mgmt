@@ -71,7 +71,7 @@ class App:
 
                 print('*' * 100)
                 print(f'Tipo Servico: {info_conta.tipo_servico.name} Concessionária:  {info_conta.concessionaria.name}')
-                print(f'Id Cliente: {info_conta.id_cliente} Id Contribuinte: {info_conta.id_contribuinte} Nome: {info_conta.nome_contribuinte}')
+                print(f'Id Documento: {info_conta.id_documento} Id Cliente: {info_conta.id_cliente} Id Contribuinte: {info_conta.id_contribuinte}')
                 print(f'Mes / periodo referencia: {info_conta.periodo_referencia}')
                 print(f'Emissao: {info_conta.data_emissao} Vencimento: {info_conta.data_vencimento} Valor: {info_conta.valor}')
                 print('*' * 100)

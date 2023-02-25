@@ -18,4 +18,4 @@ class ExtratorContaConsumoMEO(ExtratorContaConsumoBase):
         conta_consumo.data_vencimento = self.get_data(text, 'DÈbito banc·rio a partir de:', '\r\n')
         conta_consumo.valor = self.get_data(text, 'TOTAL DA FATURA Ä', '\r\n')
         
-        return self.adjust_date(conta_consumo)
+        return self.adjust_data(conta_consumo)

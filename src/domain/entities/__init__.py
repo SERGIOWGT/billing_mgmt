@@ -5,3 +5,4 @@ from .extrator_conta_consumo_vodafone import ExtratorContaConsumoVodafone
 from .extrator_conta_consumo_altice import ExtratorContaConsumoAltice
 from .extrator_conta_consumo_aguas_gaia import ExtratorContaConsumoAguasDeGaia
 from .extrator_conta_consumo_meo import ExtratorContaConsumoMEO
+from .extrator_conta_consumo_aguas_porto import ExtratorContaConsumoAguasDePorto

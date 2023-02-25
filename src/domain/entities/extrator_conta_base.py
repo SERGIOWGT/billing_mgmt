@@ -72,7 +72,9 @@ class ExtratorContaConsumoBase:
         return _str_date
 
     def adjust_data(self, _in: ContaConsumo) -> ContaConsumo:
+        _in.id_documento = self.clear_data(_in.id_documento)
         _in.id_cliente = self.clear_data(_in.id_cliente)
+        _in.id_contrato = self.clear_data(_in.id_contrato)
         _in.id_contribuinte = self.clear_data(_in.id_contribuinte)
         _in.data_emissao = self.convert_date(_in.data_emissao)
         _in.data_vencimento = self.convert_date(_in.data_vencimento)

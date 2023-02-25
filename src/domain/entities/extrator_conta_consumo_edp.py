@@ -1,4 +1,5 @@
 from datetime import datetime
+from unidecode import unidecode
 from src.domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
 from .extrator_conta_base import ExtratorContaConsumoBase
 
@@ -25,15 +26,18 @@ class ExtratorContaConsumoEDP(ExtratorContaConsumoBase):
         return _str_date
 
     def get_info(self, text: str) -> ContaConsumo:
+        text = unidecode(text)
         conta_consumo = ContaConsumo(concessionaria=ConcessionariaEnum.EDP, tipo_servico=TipoServicoEnum.LUZ)
         #Pedir mais samples desse pq aparentemente o preco/imposto mudou dia 10 de janeiro, no meio do periodo de faturacao entao o documento normal pode ser diferente
 
-        conta_consumo.id_cliente = self.get_data(text, '(Código Ponto Entrega)', 'PT')
-        conta_consumo.id_contribuinte = self.get_data(text, 'Potência', '6,9 kVA (simples)')
-        conta_consumo.nome_contribuinte = '' #self.get_data(text, 'Nome do titular IBAN\r\n', 'PT')
-        conta_consumo.mes_referencia = self.get_data(text, 'Período de faturação:', 'r\n').strip()
-        conta_consumo.data_emissao = self.get_data(text, 'Documento emitido a:','Período de faturação').strip()
-        conta_consumo.valor = self.get_data(text, 'a pagar?','Débito na minha')
-        conta_consumo.data_vencimento = self.get_data(text, 'Documento emitido a:', 'Período de faturação:')
+        conta_consumo.id_documento = self.get_data(text, 'EDPC801-', '\r\n')
+        conta_consumo.id_contribuinte = 'N/A' #Self.get_data(text, 'Potência', '6,9 kVA (simples))
+        conta_consumo.id_cliente = 'N/A'  # self.get_data(text, '(Código Ponto Entrega)', 'PT')
+        conta_consumo.id_contrato = 'N/A'  
+        
+        conta_consumo.periodo_referencia = self.get_data(text, 'Periodo de faturacao:', '\r\n')
+        conta_consumo.data_emissao = self.get_data(text, 'Documento emitido a:', '\r\n')
+        conta_consumo.valor = self.get_data(text, 'a pagar?\r\n', '\r\n')
+        conta_consumo.data_vencimento = self.get_data(text, 'conta a partir de:\r\n', '\r\n')
 
         return self.adjust_data(conta_consumo)
