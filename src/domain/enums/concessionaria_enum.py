@@ -1,10 +1,12 @@
 from enum import IntEnum, auto
 
 class ConcessionariaEnum(IntEnum):
-    NOS = auto()
-    MEO = auto()
     AGUAS_DE_GAIA = auto()
-    EDP = auto()
-    VODAFONE = auto()
-    ALTICE = auto()
     AGUAS_DE_PORTO = auto()
+    ALTICE = auto()
+    EDP = auto()
+    EPAL = auto()
+    GALP = auto()
+    MEO = auto()
+    NOS = auto()
+    VODAFONE = auto()

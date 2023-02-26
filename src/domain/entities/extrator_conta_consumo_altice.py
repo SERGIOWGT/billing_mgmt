@@ -17,6 +17,9 @@ class ExtratorContaConsumoAltice(ExtratorContaConsumoBase):
         conta_consumo.data_vencimento = self.get_data(text, 'Debito bancario a partir de:', '\r\n')
         conta_consumo.valor = self.get_data(text, 'Valor a Pagar', '\r\n')
 
+        conta_consumo.data_emissao = self.convert_2_default_date(conta_consumo.data_emissao, 'DMY', full_month=True)
+        conta_consumo.data_vencimento = self.convert_2_default_date(conta_consumo.data_vencimento, 'DMY', full_month=True)
+        
         return self.adjust_data(conta_consumo)
 
 

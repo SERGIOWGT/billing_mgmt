@@ -28,4 +28,10 @@ class ExtratorContaConsumoFactory:
         if (texto.find('EM - NIPC 507 718 666') > 0):
             return ExtratorContaConsumoAguasDePorto()
 
+        if (texto.find('www.epal.pt') > 0):
+            return ExtratorContaConsumoEpal()
+
+        if (texto.find('galp.pt') > 0):
+            return ExtratorContaConsumoGalp()
+
         return None
