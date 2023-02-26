@@ -51,7 +51,7 @@ class App:
 
     def process_downloaded_files(self) -> Any:
 
-        files = [f.upper() for f in os.listdir(self.downloaded_folder) ]
+        files = [f.upper() for f in os.listdir(self.downloaded_folder) if os.path.isfile(os.path.join(self.downloaded_folder, f))]
         for file_name in files:
 
 
