@@ -1,6 +1,10 @@
-from dataclasses import dataclass
 import os
-from typing import Any
+import pandas as pd
+from typing import Any, List
+from dataclasses import dataclass
+from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
+from src.domain.models.conta_consumo import ContaConsumo
+from src.infra.exception_handler import ApplicationException
 from src.conta_consumo_factory import ExtratorContaConsumoFactory
 from src.infra.pdf_extractor import PdfExtractor
 from src.email_handler import EmailHandler
@@ -19,6 +23,64 @@ class App:
         self.errors_folder = self.downloaded_folder + '/erros'
         self.ignored_folder=self.downloaded_folder + '/ignorados'
 
+    def _create_df_default(self, list: List[ContaConsumo]) -> Any:
+        columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Emissao', 'Vencimento', 'Valor', 'Nome Cliente', 'Arquivo']
+
+        df = pd.DataFrame(columns=columns)
+        for line in list:
+            _dict = {}
+            _dict['Concessionaria'] = ConcessionariaEnum(line.concessionaria).name
+            _dict['Tipo Servico']= TipoServicoEnum(line.tipo_servico).name
+            _dict['N. Contrato'] = line.id_contrato
+            _dict['N. Cliente'] = line.id_cliente
+            _dict['N. Contribuinte'] = line.id_contribuinte
+            _dict['Local / Instalacao'] = line.local_consumo
+            _dict['N. Documento / N. Fatura'] = line.id_documento
+            _dict['Periodo Referencia'] = line.periodo_referencia
+            _dict['Emissao'] = line.data_emissao
+            _dict['Vencimento'] = line.data_vencimento
+            _dict['Valor'] = line.valor
+            _dict['Nome Cliente'] = line.nome_cliente
+            _dict['Arquivo'] = line.file_name
+
+            df = pd.concat([df, pd.DataFrame.from_records([_dict])])
+        return df
+
+    def _create_df_ignored(self, list) -> Any:
+        columns = ['Erro', 'Arquivo']
+        df = pd.DataFrame(columns=columns)
+        for line in list:
+            df = df.append({'Erro': line[0], 'Arquivo': line[1]}, ignore_index=True)
+
+        return df
+
+    def _result_2_excel(self, processed_list, error_list, ignored_list):
+        df_ok = self._create_df_default(processed_list)
+        df_error = self._create_df_default(error_list)
+        df_ignored = self._create_df_ignored(ignored_list)
+
+        with pd.ExcelWriter('output.xlsx') as writer:
+            df_error.to_excel(writer, sheet_name='Erros', index=False)
+            df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
+            df_ok.to_excel(writer, sheet_name='Processados', index=False)
+
+    def _move_file(self, file_name, destination, log):
+        try:
+            os.rename(file_name, destination)
+        except Exception as error:
+            ApplicationException.when(True, str(error), log)
+
+    def _conta_consumo_2_log(self, info_conta, log):
+        log.info(f'==> Concessionária/Tipo Servico: {info_conta.concessionaria.name} / {info_conta.tipo_servico.name} ')
+        log.info(f'==> Id Documento: {info_conta.id_documento}')
+        log.info(f'==> Id Cliente: {info_conta.id_cliente}')
+        log.info(f'==> Id Contribuinte: {info_conta.id_contribuinte}')
+        log.info(f'==> Id Contrato: {info_conta.id_contrato}')
+        log.info(f'==> Mes / periodo referencia: {info_conta.periodo_referencia}')
+        log.info(f'==> Emissao/Vencimento: {info_conta.data_emissao} / {info_conta.data_vencimento}')
+        log.info(f'==> Valor: {info_conta.valor}')
+        log.info(info_conta.__dict__)
 
     def download_files(self, smtp_server: str, user_name: str, password: str, download_email_folder: str) -> int:
         num_emails = 0
@@ -35,51 +97,46 @@ class App:
 
                 num_emails += 1
                 email.move(message_uid, "PROCESSADOS")
-               
+
                 for file_name in file_list:
                     print(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.')
 
         email.logout()
         return num_emails
 
-    def _move_file(self, origin_file_name: str, destination_file_name: str):
-        try:
-            os.rename(origin_file_name, destination_file_name)
-        except:
-            pass
-            
+    def _list_pdf(self):
+        return [f.upper() for f in os.listdir(self.downloaded_folder) if os.path.isfile(os.path.join(self.downloaded_folder, f)) and f.endswith('.PDF') == True]
 
-    def process_downloaded_files(self) -> Any:
-
-        files = [f.upper() for f in os.listdir(self.downloaded_folder) if os.path.isfile(os.path.join(self.downloaded_folder, f))]
+    def process_downloaded_files(self, log) -> Any:
+        processed_list = [] 
+        ignored_list = []
+        error_list = []
+        files = self._list_pdf()
+        destination = ''
         for file_name in files:
-
-
             complete_file_name = os.path.join(self.downloaded_folder, file_name)
-            if not file_name.endswith('.PDF'):
-                destination = os.path.join(self.ignored_folder, file_name)
-                self._move_file(complete_file_name, destination)
-                continue
-
-
-            print(file_name)
-            
+            log.info(f'Processing file: {complete_file_name}')
             all_text = PdfExtractor().get_text(complete_file_name)
             extrator = ExtratorContaConsumoFactory().execute(all_text)
             if (extrator):
                 info_conta = extrator.get_info(all_text)
+                info_conta.file_name = file_name
+                self._conta_consumo_2_log(info_conta, log)
 
-                print('*' * 100)
-                print(f'Tipo Servico: {info_conta.tipo_servico.name} Concessionária:  {info_conta.concessionaria.name}')
-                print(f'Id Documento: {info_conta.id_documento} Id Cliente: {info_conta.id_cliente} Id Contribuinte: {info_conta.id_contribuinte}')
-                print(f'Mes / periodo referencia: {info_conta.periodo_referencia}')
-                print(f'Emissao: {info_conta.data_emissao} Vencimento: {info_conta.data_vencimento} Valor: {info_conta.valor}')
-                print('*' * 100)
-                input('press <ENTER> to continue')
+                if (info_conta.valor):
+                    processed_list.append(info_conta)
+                else:
+                    error_list.append(info_conta)
                 destination = os.path.join(self.processed_folder, file_name)
-                self._move_file(complete_file_name, destination)
             else:
+                msg = f'Arquivo não reconhecido ou fora do formato {complete_file_name}'
+                log.info(msg)
+                ignored_list.append((file_name, msg))
                 destination = os.path.join(self.errors_folder, file_name)
-                self._move_file(complete_file_name, destination)
+
+            #self._move_file(complete_file_name, destination, log)
+
+        if (len(files)):
+            self._result_2_excel(processed_list, error_list, ignored_list)
 
         return Any

@@ -7,9 +7,10 @@ disable=C0114,  # missing-module-docstring
         E0401,  # Unable to import 
         C0325,  # Unnecessary parens after 'if' keyword (superfluous-parens)
         W0622,  # builtin methods used as parameters
-        W0703   # : Catching too general exception
-        E1121   # :too-many-function-args)
-good-names = db, id, QTDE
+        W0703,  # : Catching too general exception
+        E1121,  # :too-many-function-args)
+        C0103,  #invalid-name
+good-names = db, id, QTDE,  msg
 
 [FORMAT]
 max-line-length=240

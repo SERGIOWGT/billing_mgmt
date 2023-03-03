@@ -16,12 +16,13 @@ class ExtratorContaConsumoVodafone(ExtratorContaConsumoBase):
             conta_consumo.id_contrato = informacoes_cliente[3]
             conta_consumo.id_contribuinte = informacoes_cliente[2]
         else:
-            conta_consumo.id_documento = conta_consumo.id_contrato = conta_consumo.id_contribuinte = 'N/A'
+            conta_consumo.id_documento = 'N/A'
+            conta_consumo.id_contrato = 'N/A'
+            conta_consumo.id_contribuinte = 'N/A'
             
         conta_consumo.data_emissao = self.get_data(text, 'Data de emissao: ', num_chars=10)
         valor = self.get_data(text, 'Total da fatura com IVA', 'Resumo do IVA').split('EUR')
         conta_consumo.valor = valor[-1]
-        #conta_consumo.periodo_referencia = self.get_data(text, 'Periodo de Faturacao de', '\r\n')
         conta_consumo.periodo_referencia = self.get_data(text, 'Periodo de faturacao:', '\r\n')
 
         # WARN:

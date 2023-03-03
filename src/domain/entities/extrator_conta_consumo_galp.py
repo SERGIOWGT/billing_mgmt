@@ -13,6 +13,7 @@ class ExtratorContaConsumoGalp(ExtratorContaConsumoBase):
         conta_consumo.id_documento = self.get_data(text, 'Fatura: ', '\r\n')
         conta_consumo.id_cliente = self.get_data(text, 'N.o de contribuinte\r\n', '\r\n')
         conta_consumo.id_contrato = self.get_data(text, 'N.o de contrato\r\n', '\r\n')
+        conta_consumo.nome_cliente = self.get_data(text, 'Nome do titular\r\n', '\r\n')
 
         conta_consumo.valor = self.get_data(text, 'VALOR A DEBITAR:', 'EUR')
         conta_consumo.periodo_referencia = self.get_data(text, 'Periodo de Faturacao:', '\r\n')

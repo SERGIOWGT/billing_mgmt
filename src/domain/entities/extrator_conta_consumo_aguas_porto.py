@@ -7,4 +7,8 @@ class ExtratorContaConsumoAguasDePorto(ExtratorContaConsumoAguasDeGaia):
         conta_consumo.tipo_servico = TipoServicoEnum.AGUA
         conta_consumo.concessionaria = ConcessionariaEnum.AGUAS_DE_PORTO
 
+        vet = conta_consumo.id_contrato.split('/')
+        if (len(vet) == 2):
+            conta_consumo.id_contrato = vet[1]
+
         return self.adjust_data(conta_consumo)

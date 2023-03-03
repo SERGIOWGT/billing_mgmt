@@ -3,27 +3,24 @@ from src.domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, Ti
 from .extrator_conta_base import ExtratorContaConsumoBase
 
 class ExtratorContaConsumoEpal(ExtratorContaConsumoBase):
-    
     def convert_data(self, str_data: str, format: str) -> str:
         if (not str_data):
             return ''
-        
-                
-        
-        
+
         return str_data
-    
-    
+
     def get_info(self, text: str) -> ContaConsumo:
         text = unidecode(text)
         conta_consumo = ContaConsumo(concessionaria=ConcessionariaEnum.EPAL, tipo_servico=TipoServicoEnum.AGUA)
-        
         conta_consumo.id_contribuinte = 'N/A'
 
         # OK
         conta_consumo.id_documento = self.get_data(text, 'FATURA no FT ', ', emitida em ')
         conta_consumo.id_cliente = self.get_data(text, 'COD CLIENTE', 'CONTA CLIENTE ')
+        conta_consumo.local_consumo = self.get_data(text, 'COD LOCAL', 'COD ENTIDADE ')
         conta_consumo.id_contrato = self.get_data(text, 'CONTA CLIENTE No', '\r\n')
+        conta_consumo.nome_cliente = self.get_data(text, 'Titular do Contrato - ', 'NIF -')
+        
 
         conta_consumo.valor = self.get_data(text, 'Valor a Pagar', 'EUR')
         conta_consumo.periodo_referencia = self.get_data(text, 'Periodo de Faturacao de', '\r\n')
