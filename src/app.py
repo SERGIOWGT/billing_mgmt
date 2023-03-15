@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
 from src.domain.models.conta_consumo import ContaConsumo
 from src.infra.exception_handler import ApplicationException
-from src.conta_consumo_factory import ExtratorContaConsumoFactory
+from src.conta_consumo_factory import ContaConsumoFactory
 from src.infra.pdf_extractor import PdfExtractor
 from src.email_handler import EmailHandler
+
 
 @dataclass
 class App:
@@ -21,7 +22,7 @@ class App:
         self.downloaded_folder = base_folder
         self.processed_folder = self.downloaded_folder + '/processados'
         self.errors_folder = self.downloaded_folder + '/erros'
-        self.ignored_folder=self.downloaded_folder + '/ignorados'
+        self.ignored_folder = self.downloaded_folder + '/ignorados'
 
     def _create_df_default(self, list: List[ContaConsumo]) -> Any:
         columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
@@ -31,7 +32,7 @@ class App:
         for line in list:
             _dict = {}
             _dict['Concessionaria'] = ConcessionariaEnum(line.concessionaria).name
-            _dict['Tipo Servico']= TipoServicoEnum(line.tipo_servico).name
+            _dict['Tipo Servico'] = TipoServicoEnum(line.tipo_servico).name
             _dict['N. Contrato'] = line.id_contrato
             _dict['N. Cliente'] = line.id_cliente
             _dict['N. Contribuinte'] = line.id_contribuinte
@@ -108,33 +109,33 @@ class App:
         return [f.upper() for f in os.listdir(self.downloaded_folder) if os.path.isfile(os.path.join(self.downloaded_folder, f)) and f.endswith('.PDF') == True]
 
     def process_downloaded_files(self, log) -> Any:
-        processed_list = [] 
+        processed_list = []
         ignored_list = []
         error_list = []
         files = self._list_pdf()
-        destination = ''
         for file_name in files:
             complete_file_name = os.path.join(self.downloaded_folder, file_name)
             log.info(f'Processing file: {complete_file_name}')
             all_text = PdfExtractor().get_text(complete_file_name)
-            extrator = ExtratorContaConsumoFactory().execute(all_text)
-            if (extrator):
-                info_conta = extrator.get_info(all_text)
-                info_conta.file_name = file_name
-                self._conta_consumo_2_log(info_conta, log)
+            conta_consumo = ContaConsumoFactory().execute(all_text, file_name)
+            if (conta_consumo):
+                try:
+                    conta_consumo.create(all_text)
+                    processed_list.append(conta_consumo)
+                    # self._conta_consumo_2_log(info_conta, log)
 
-                if (info_conta.valor):
-                    processed_list.append(info_conta)
-                else:
-                    error_list.append(info_conta)
-                destination = os.path.join(self.processed_folder, file_name)
+                except Exception:
+                    error_list.append(conta_consumo)
+                    # self._conta_consumo_2_log(info_conta, log)
+
+                # destination = os.path.join(self.processed_folder, file_name)
             else:
                 msg = f'Arquivo não reconhecido ou fora do formato {complete_file_name}'
                 log.info(msg)
                 ignored_list.append((file_name, msg))
-                destination = os.path.join(self.errors_folder, file_name)
+                # destination = os.path.join(self.errors_folder, file_name)
 
-            #self._move_file(complete_file_name, destination, log)
+            # self._move_file(complete_file_name, destination, log)
 
         if (len(files)):
             self._result_2_excel(processed_list, error_list, ignored_list)

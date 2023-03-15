@@ -1,6 +1,7 @@
 from enum import IntEnum, auto
 
 class ConcessionariaEnum(IntEnum):
+    NADA = auto()
     AGUAS_DE_GAIA = auto()
     AGUAS_DE_PORTO = auto()
     ALTICE = auto()
