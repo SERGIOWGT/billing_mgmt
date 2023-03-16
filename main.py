@@ -26,31 +26,24 @@ if __name__ == '__main__':
     load_dotenv()
 
     log = create_logger(__name__)
-    log.info('Init App')
+    msg = 'App started'
+    log.info(msg)
+    print(msg)
     imap_server, user_name, password, base_folder, email_destination_folder = get_environ_vars()
-    log.info('Environment vars read')
-    download_folder = os.path.join(base_folder, 'downloads')
-
-    app = App(download_folder)
+    
+    msg = 'Environment vars read'
+    log.info(msg)
+    print(msg)
+        
     try:
-        ApplicationException.when(not os.path.exists(download_folder), f'Path does not exist. [{download_folder}]', log)
-
-        count_email = app.download_files(imap_server, user_name, password, download_folder)
-        if count_email == 0:
-            print('Nenhum arquivo baixado')
-        elif count_email == 1:
-            print('Um arquivo baixado')
-        else:
-            print(f'{count_email} arquivos baixados')
+        app = App(base_folder, log)
+        app.execute(imap_server, user_name, password)
 
     except Exception as error:
         msg = str(error)
         log.critical(msg)
         print(msg)
 
-    try:
-        app.process_downloaded_files(log)
-    except Exception as error:
-        msg = str(error)
-        log.critical(msg)
-        print(msg)
+    msg = 'App finished'
+    log.info(msg)
+    print(msg)

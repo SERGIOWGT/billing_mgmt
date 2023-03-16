@@ -28,9 +28,6 @@ class ContaConsumoBase:
     file_name = ''
 
     @staticmethod
-    @staticmethod
-
-    @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
         start_pos = 0
         end_pos = 0
@@ -52,8 +49,9 @@ class ContaConsumoBase:
         ret = ret.replace('\r', '').replace('\n', '')
 
         return ret
-
-    def _is_date(self, str_date) -> bool:
+    
+    @staticmethod
+    def _is_date(str_date) -> bool:
         try:
             _date = datetime.strptime(str_date, '%d/%m/%Y')
         except ValueError:
@@ -85,7 +83,7 @@ class ContaConsumoBase:
         elif (format == 'DMY'):
             str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
 
-        if not self.is_date(str_date):
+        if not self._is_date(str_date):
             return ''
 
         return str_date
