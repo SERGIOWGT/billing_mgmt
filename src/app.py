@@ -8,7 +8,7 @@ from src.infra.exception_handler import ApplicationException
 from src.conta_consumo_factory import ContaConsumoFactory
 from src.infra.pdf_extractor import PdfExtractor
 from src.email_handler import EmailHandler
-
+from src.domain.entities.alojamentos import PoolAlojamentos
 
 @dataclass
 class App:
@@ -26,7 +26,8 @@ class App:
 
     def _create_df_default(self, list: List[ContaConsumo]) -> Any:
         columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Emissao', 'Vencimento', 'Valor', 'Nome Cliente', 'Arquivo']
+                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Emissao', 
+                   'Vencimento', 'Valor', 'Nome Cliente', 'Arquivo', 'Diretorio', 'Alojamento']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -44,6 +45,8 @@ class App:
             _dict['Valor'] = line.valor
             _dict['Nome Cliente'] = line.nome_cliente
             _dict['Arquivo'] = line.file_name
+            _dict['Diretorio'] = line.diretorio
+            _dict['Alojamento'] = line.id_alojamento
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
@@ -108,7 +111,7 @@ class App:
     def _list_pdf(self):
         return [f.upper() for f in os.listdir(self.downloaded_folder) if os.path.isfile(os.path.join(self.downloaded_folder, f)) and f.endswith('.PDF') == True]
 
-    def process_downloaded_files(self, log) -> Any:
+    def process_downloaded_files(self, log, alojamentos: PoolAlojamentos) -> Any:
         processed_list = []
         ignored_list = []
         error_list = []
@@ -121,7 +124,15 @@ class App:
             if (conta_consumo):
                 try:
                     conta_consumo.create(all_text)
+                    
+                    alojamento = alojamentos.get_alojamento(conta_consumo.id_cliente, conta_consumo.id_contrato, conta_consumo.local_consumo)
+                    if (alojamento):
+                        conta_consumo.id_alojamento = alojamento.nome
+                        conta_consumo.diretorio = alojamento.diretorio
+                        
                     processed_list.append(conta_consumo)
+
+                        
                     # self._conta_consumo_2_log(info_conta, log)
 
                 except Exception:

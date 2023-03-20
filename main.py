@@ -1,6 +1,9 @@
 import os
 import logging
 from dotenv import load_dotenv
+from src.domain.entities.alojamentos import PoolAlojamentos
+from src.infra.excel_reader import ExcelReader
+from src.infra.gdrive_handler import GDriveHandler
 from src.infra.exception_handler import ApplicationException
 from src.app import App
 
@@ -47,9 +50,10 @@ if __name__ == '__main__':
         msg = str(error)
         log.critical(msg)
         print(msg)
-
+  
     try:
-        app.process_downloaded_files(log)
+        alojamentos = ExcelReader().get_database('Alojamentos.xlsx')        
+        app.process_downloaded_files(log, PoolAlojamentos(alojamentos))
     except Exception as error:
         msg = str(error)
         log.critical(msg)

@@ -6,7 +6,7 @@ from src.domain.models.conta_consumo import ConcessionariaEnum, TipoServicoEnum
 class ContaConsumoAltice(ContaConsumoBase):
     def __init__(self, file_name: str):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.ALTICE
+        self.concessionaria = ConcessionariaEnum.ALTICE_MEO
         self.tipo_servico = TipoServicoEnum.INTERNET
 
     def create(self, text: str) -> None:

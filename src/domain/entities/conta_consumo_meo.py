@@ -6,7 +6,7 @@ from .conta_consumo_base import ContaConsumoBase
 class ContaConsumoMEO(ContaConsumoBase):
     def __init__(self, file_name: str):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.MEO
+        self.concessionaria = ConcessionariaEnum.ALTICE_MEO
         self.tipo_servico = TipoServicoEnum.INTERNET
 
     def create(self, text: str) -> None:

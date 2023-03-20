@@ -26,9 +26,8 @@ class ContaConsumoBase:
     data_vencimento = ''
     valor = ''
     file_name = ''
-
-    @staticmethod
-    @staticmethod
+    diretorio = ''
+    id_alojamento = ''
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -85,7 +84,7 @@ class ContaConsumoBase:
         elif (format == 'DMY'):
             str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
 
-        if not self.is_date(str_date):
+        if not self._is_date(str_date):
             return ''
 
         return str_date
@@ -101,6 +100,7 @@ class ContaConsumoBase:
         self.id_cliente = _clear_data(self.id_cliente)
         self.id_contrato = _clear_data(self.id_contrato)
         self.id_contribuinte = _clear_data(self.id_contribuinte)
+        self.local_consumo = _clear_data(self.local_consumo)
         self.valor = _clear_value(self.valor)
 
     @abstractmethod
