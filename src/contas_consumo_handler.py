@@ -14,8 +14,9 @@ class ContaConsumoHandler:
     errors_folder = ''
     processed_folder = ''
 
-    def __init__(self, base_folder: str, log):
-        self.downloaded_folder = base_folder
+    def __init__(self, downloads_folder: str, export_folder: str, log):
+        self.downloaded_folder = downloads_folder
+
         self.processed_folder = self.downloaded_folder + '/processados'
         ApplicationException.when(not os.path.exists( self.processed_folder ), f'Path does not exist. [{ self.processed_folder }]', log)
 
@@ -24,6 +25,9 @@ class ContaConsumoHandler:
 
         self.ignored_folder = self.downloaded_folder + '/ignorados'
         ApplicationException.when(not os.path.exists( self.ignored_folder ), f'Path does not exist. [{ self.ignored_folder }]', log)
+
+        self.export_folder = export_folder
+        ApplicationException.when(not os.path.exists( self.export_folder ), f'Path does not exist. [{ self.export_folder }]', log)
 
         self.log = log
 
@@ -63,11 +67,12 @@ class ContaConsumoHandler:
         df_ok = self._create_df_default(processed_list)
         df_error = self._create_df_default(error_list)
         df_ignored = self._create_df_ignored(ignored_list)
+        output_file_name = os.path.join(self.export_folder, 'output.xlsx')
 
-        with pd.ExcelWriter('output.xlsx') as writer:
+        with pd.ExcelWriter(output_file_name) as writer:
+            df_ok.to_excel(writer, sheet_name='Processados', index=False)
             df_error.to_excel(writer, sheet_name='Erros', index=False)
             df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
-            df_ok.to_excel(writer, sheet_name='Processados', index=False)
 
     def _move_file(self, file_name, destination):
         try:

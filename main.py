@@ -1,7 +1,5 @@
-import os
 import logging
-from dotenv import load_dotenv
-from src.infra.exception_handler import ApplicationException
+from src.infra.app_configuration import ConfigurationApp
 from src.app import App
 
 def create_logger(name: str):
@@ -15,29 +13,14 @@ def create_logger(name: str):
 
     return logging.getLogger(name)
 
-def get_environ_vars():
-    return (os.environ.get('IMAP_SERVER', ''), 
-                os.environ.get('USER_EMAIL', ''), 
-                os.environ.get('PASS_EMAIL', ''),  
-                os.environ.get('BASE_FOLDER', ''),     
-                os.environ.get('EMAIL_DESTINATION_FOLDER', ''))
-
 if __name__ == '__main__':
-    load_dotenv()
-
     log = create_logger(__name__)
     msg = 'App started'
     log.info(msg)
-    print(msg)
-    imap_server, user_name, password, base_folder, email_destination_folder = get_environ_vars()
-    
-    msg = 'Environment vars read'
-    log.info(msg)
-    print(msg)
-        
     try:
-        app = App(base_folder, log)
-        app.execute(imap_server, user_name, password)
+        config = ConfigurationApp('config\\config.json')
+        app = App(config, log)
+        app.execute()
 
     except Exception as error:
         msg = str(error)

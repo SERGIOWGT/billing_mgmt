@@ -8,21 +8,35 @@ from src.infra.exception_handler import ApplicationException
 
 @dataclass
 class App:
-    def __init__(self, base_folder: str, log):
-        ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', log)
+    smtp_server = ''
+    email_user = ''
+    email_password = ''
+    downloads_folder = ''
+    export_folder = ''
+    input_email_folder = ''
+    output_email_folder = ''
+
+    def __init__(self, config, log):
+        self.downloads_folder = config.get('diretorios.downloads')
+        ApplicationException.when(not os.path.exists(self.downloads_folder), f'Path does not exist. [{self.downloads_folder}]', log)
+
+        self.export_folder = config.get('diretorios.export')
+        ApplicationException.when(not os.path.exists(self.export_folder), f'Path does not exist. [{self.export_folder}]', log)
         self.log = log
-        self.base_folder = base_folder
-        self.save_folder = os.path.join(base_folder, "downloads")
-        
-        
-    def execute(self, smtp_server: str, user_name: str, password: str):
-        downloader = DownloadAttachmentHandler(path_to_save=self.save_folder, inbox_folder="INBOX", save_folder="PROCESSADOS", log=self.log)
+        self.smtp_server = config.get('email.imap_server')
+        self.email_user = config.get('email.user')
+        self.email_password = config.get('email.password')
+        self.input_email_folder = config.get('email.input_folder')
+        self.output_email_folder = config.get('email.output_folder')
+
+    def execute(self):
+        downloader = DownloadAttachmentHandler(path_to_save=self.downloads_folder, input_email_folder=self.input_email_folder, output_email_folder=self.output_email_folder, log=self.log)
         try:
-            downloader.execute(smtp_server=smtp_server, user_name=user_name, password=password)
+            downloader.execute(smtp_server=self.smtp_server, user_name=self.email_user, password=self.email_password)
         except Exception:
             raise
 
-        handler = ContaConsumoHandler(self.save_folder, self.log)
+        handler = ContaConsumoHandler(self.downloads_folder, self.export_folder, self.log)
         try:
             handler.execute()
         except Exception:

@@ -1,17 +1,15 @@
 import os
-from typing import Any, List
 from dataclasses import dataclass
 from src.infra.exception_handler import ApplicationException
 from src.email_handler import EmailHandler
 
-
 @dataclass
 class DownloadAttachmentHandler:
-    def __init__(self, path_to_save, inbox_folder, save_folder, log):
+    def __init__(self, path_to_save, input_email_folder, output_email_folder, log):
         ApplicationException.when(not os.path.exists(path_to_save), f'Path does not exist. [{path_to_save}]', log)
         self.path_to_save = path_to_save
-        self.inbox_folder = inbox_folder
-        self.save_folder = save_folder
+        self.input_email_folder = input_email_folder
+        self.output_email_folder = output_email_folder
         self.log = log
 
     def execute(self, smtp_server: str, user_name: str, password: str) -> int:
@@ -19,7 +17,7 @@ class DownloadAttachmentHandler:
         email = EmailHandler()
 
         email.login(smtp_server, user_name, password, use_ssl=True)
-        messages_id = email.get_messages_id(self.inbox_folder)
+        messages_id = email.get_messages_id(self.input_email_folder)
 
         for message_uid in messages_id:
             (subject, sender, rec_date, has_attachments) = email.get_email_infos(message_uid)
@@ -28,12 +26,11 @@ class DownloadAttachmentHandler:
                 file_list = email.get_save_attachments(message_uid, self.path_to_save)
 
                 num_emails += 1
-                email.move(message_uid, self.save_folder)
+                email.move(message_uid, self.output_email_folder)
 
                 for file_name in file_list:
                     self.log.info(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.')
 
         email.logout()
         return num_emails
-
     

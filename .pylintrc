@@ -9,7 +9,8 @@ disable=C0114,  # missing-module-docstring
         W0622,  # builtin methods used as parameters
         W0703,  # : Catching too general exception
         E1121,  # :too-many-function-args)
-        C0103,  #invalid-name
+        C0103,  # invalid-name
+        E0402,  # relative-beyond-top-level
 good-names = db, id, QTDE,  msg
 
 [FORMAT]

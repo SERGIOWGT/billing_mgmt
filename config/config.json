@@ -1,0 +1,16 @@
+{
+    "email": {
+        "imap_server": "imap.gmail.com",
+        "user": "sergiowgt.teste@gmail.com",
+        "password": "qrsatvqbzwoddmbj",
+        "input_folder": "INBOX",
+        "output_folder": "PROCESSADOS"
+    },
+    "log": {
+        "file_name": "logs/log.txt"
+    },
+    "diretorios": {
+        "downloads": "C:/repositorio.gambiarra/billing_mgmt/downloads",
+        "export": "C:/repositorio.gambiarra/billing_mgmt/exports"
+    }
+}
