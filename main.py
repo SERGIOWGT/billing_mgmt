@@ -1,4 +1,5 @@
 import logging
+from src.infra.google_drive_handler import GoogleDriveHandler
 from src.infra.app_configuration import ConfigurationApp
 from src.app import App
 
@@ -15,11 +16,15 @@ def create_logger(name: str):
 
 if __name__ == '__main__':
     log = create_logger(__name__)
-    msg = 'App started'
-    log.info(msg)
+    log.info('App started')
+
+
     try:
         config = ConfigurationApp('config\\config.json')
-        app = App(config, log)
+        drive = GoogleDriveHandler(config.get("directories.config"))
+        log.info('Google Drive connected')
+
+        app = App(config, log, drive)
         app.execute()
 
     except Exception as error:

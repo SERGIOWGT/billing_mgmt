@@ -5,18 +5,24 @@ from src.email_handler import EmailHandler
 
 @dataclass
 class DownloadAttachmentHandler:
-    def __init__(self, path_to_save, input_email_folder, output_email_folder, log):
-        ApplicationException.when(not os.path.exists(path_to_save), f'Path does not exist. [{path_to_save}]', log)
-        self.path_to_save = path_to_save
-        self.input_email_folder = input_email_folder
-        self.output_email_folder = output_email_folder
+    def __init__(self, log, config):
+        self.config = config
+
+        self.smtp_server = self.config.get('email.imap_server')
+        self.user = self.config.get('email.user')
+        self.password = self.config.get('email.password')
+        self.input_email_folder = self.config.get('email.input_folder')
+        self.output_email_folder = self.config.get('email.output_folder')
+
+        self.path_to_save = self.config.get('directories.downloads')
+        ApplicationException.when(not os.path.exists(self.path_to_save), f'Path does not exist. [{self.path_to_save}]', log)
         self.log = log
 
-    def execute(self, smtp_server: str, user_name: str, password: str) -> int:
+    def execute(self) -> int:
         num_emails = 0
         email = EmailHandler()
 
-        email.login(smtp_server, user_name, password, use_ssl=True)
+        email.login(self.smtp_server, self.user, self.password, use_ssl=True)
         messages_id = email.get_messages_id(self.input_email_folder)
 
         for message_uid in messages_id:

@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import io
 from typing import Any, List
 from dataclasses import dataclass
 from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
@@ -14,9 +15,10 @@ class ContaConsumoHandler:
     errors_folder = ''
     processed_folder = ''
 
-    def __init__(self, downloads_folder: str, export_folder: str, log):
-        self.downloaded_folder = downloads_folder
+    def __init__(self, log, drive, config):
+        self.config = config
 
+        self.downloaded_folder = self.config.get('directories.downloads')
         self.processed_folder = self.downloaded_folder + '/processados'
         ApplicationException.when(not os.path.exists( self.processed_folder ), f'Path does not exist. [{ self.processed_folder }]', log)
 
@@ -26,10 +28,16 @@ class ContaConsumoHandler:
         self.ignored_folder = self.downloaded_folder + '/ignorados'
         ApplicationException.when(not os.path.exists( self.ignored_folder ), f'Path does not exist. [{ self.ignored_folder }]', log)
 
-        self.export_folder = export_folder
+        self.export_folder = self.config.get('directories.exports')
         ApplicationException.when(not os.path.exists( self.export_folder ), f'Path does not exist. [{ self.export_folder }]', log)
 
         self.log = log
+        self.drive = drive
+
+    def _download_database_excel(self) -> Any:
+        stream_file = self.drive.get_excel_file(self.config.get('google drive.file_accommodation_id'))
+        df = pd.read_excel(io.BytesIO(stream_file))
+        print(df)
 
     def _create_df_default(self, list: List[ContaConsumo]) -> Any:
         columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
@@ -90,11 +98,14 @@ class ContaConsumoHandler:
         self.log.info(f'==> Emissao/Vencimento: {info_conta.data_emissao} / {info_conta.data_vencimento}')
         self.log.info(f'==> Valor: {info_conta.valor}')
         self.log.info(info_conta.__dict__)
-    
+
     def _list_pdf(self):
         return [f.upper() for f in os.listdir(self.downloaded_folder) if os.path.isfile(os.path.join(self.downloaded_folder, f)) and f.upper().endswith('.PDF') == True]
 
     def execute(self) -> Any:
+
+        self._download_database_excel()
+
         processed_list = []
         ignored_list = []
         error_list = []

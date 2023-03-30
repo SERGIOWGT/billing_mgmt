@@ -9,8 +9,14 @@
     "log": {
         "file_name": "logs/log.txt"
     },
-    "diretorios": {
+    "directories": {
         "downloads": "C:/repositorio.gambiarra/billing_mgmt/downloads",
-        "export": "C:/repositorio.gambiarra/billing_mgmt/exports"
+        "exports": "C:/repositorio.gambiarra/billing_mgmt/exports",
+        "config": "C:/repositorio.gambiarra/billing_mgmt/config"
+    },
+    "google drive": {
+        "folder_client_id": "1TiOHrOJ-dH4CHe2_OMESnDd-4MQH6ybV",
+        "folder_accounting_id": "1ebpaEv90c4FM4gFi9j9JAomI3WRGnfMe",
+        "file_accommodation_id": "1ECbR1_6tlkhVijUYTL4ATI7cw7bt1GFq"
     }
 }

@@ -8,35 +8,25 @@ from src.infra.exception_handler import ApplicationException
 
 @dataclass
 class App:
-    smtp_server = ''
-    email_user = ''
-    email_password = ''
-    downloads_folder = ''
-    export_folder = ''
-    input_email_folder = ''
-    output_email_folder = ''
 
-    def __init__(self, config, log):
-        self.downloads_folder = config.get('diretorios.downloads')
+    def __init__(self, config, log, drive):
+        self.downloads_folder = config.get('directories.downloads')
         ApplicationException.when(not os.path.exists(self.downloads_folder), f'Path does not exist. [{self.downloads_folder}]', log)
 
-        self.export_folder = config.get('diretorios.export')
+        self.export_folder = config.get('directories.exports')
         ApplicationException.when(not os.path.exists(self.export_folder), f'Path does not exist. [{self.export_folder}]', log)
         self.log = log
-        self.smtp_server = config.get('email.imap_server')
-        self.email_user = config.get('email.user')
-        self.email_password = config.get('email.password')
-        self.input_email_folder = config.get('email.input_folder')
-        self.output_email_folder = config.get('email.output_folder')
+        self.drive = drive
+        self.config = config
 
     def execute(self):
-        downloader = DownloadAttachmentHandler(path_to_save=self.downloads_folder, input_email_folder=self.input_email_folder, output_email_folder=self.output_email_folder, log=self.log)
+        downloader = DownloadAttachmentHandler(log=self.log, config=self.config)
         try:
-            downloader.execute(smtp_server=self.smtp_server, user_name=self.email_user, password=self.email_password)
+            downloader.execute()
         except Exception:
             raise
 
-        handler = ContaConsumoHandler(self.downloads_folder, self.export_folder, self.log)
+        handler = ContaConsumoHandler(self.log, self.drive, self.config)
         try:
             handler.execute()
         except Exception:
