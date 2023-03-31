@@ -26,6 +26,8 @@ class ContaConsumoBase:
     data_vencimento = ''
     valor = ''
     file_name = ''
+    id_alojamento = ''
+    diretorio = ''
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:

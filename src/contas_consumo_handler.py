@@ -8,6 +8,8 @@ from src.domain.models.conta_consumo import ContaConsumo
 from src.infra.exception_handler import ApplicationException
 from src.conta_consumo_factory import ContaConsumoFactory
 from src.infra.pdf_extractor import PdfExtractor
+from src.domain.entities.alojamentos import Alojamento, PoolAlojamentos
+
 
 @dataclass
 class ContaConsumoHandler:
@@ -34,14 +36,31 @@ class ContaConsumoHandler:
         self.log = log
         self.drive = drive
 
-    def _download_database_excel(self) -> Any:
+    def _get_alojamentos(self) -> PoolAlojamentos:
         stream_file = self.drive.get_excel_file(self.config.get('google drive.file_accommodation_id'))
-        df = pd.read_excel(io.BytesIO(stream_file))
-        print(df)
+        df_ = pd.read_excel(io.BytesIO(stream_file))
+        df = df_.where(pd.notnull(df_), None)
+
+        alojamentos = []
+        for index, row in df.iterrows():
+            if (index < 1):
+                continue 
+
+            nome = row[2]
+            diretorio = row[3]
+            for empresa in [x for x in list(ConcessionariaEnum) if x != ConcessionariaEnum.NADA and x != ConcessionariaEnum.MEO]:
+                cliente = row[1 + (3 * empresa)]
+                conta = row[2 + (3 * empresa)]
+                local = row[3 + (3 * empresa)]
+
+                if cliente or conta or local:
+                    alojamentos.append(Alojamento(empresa, nome, diretorio, str(cliente), str(conta), str(local)))
+
+        return PoolAlojamentos(alojamentos)
 
     def _create_df_default(self, list: List[ContaConsumo]) -> Any:
         columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Emissao', 'Vencimento', 'Valor', 'Nome Cliente', 'Arquivo']
+                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Emissao', 'Vencimento', 'Valor', 'Alojamento', 'Diretorio', 'Arquivo']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -57,7 +76,8 @@ class ContaConsumoHandler:
             _dict['Emissao'] = line.data_emissao
             _dict['Vencimento'] = line.data_vencimento
             _dict['Valor'] = line.valor
-            _dict['Nome Cliente'] = line.nome_cliente
+            _dict['Alojamento'] = line.id_alojamento
+            _dict['Diretorio'] = line.diretorio
             _dict['Arquivo'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
@@ -104,7 +124,7 @@ class ContaConsumoHandler:
 
     def execute(self) -> Any:
 
-        self._download_database_excel()
+        pool_alojamentos = self._get_alojamentos()
 
         processed_list = []
         ignored_list = []
@@ -118,7 +138,11 @@ class ContaConsumoHandler:
             if (conta_consumo):
                 try:
                     conta_consumo.create(all_text)
-                    processed_list.append(conta_consumo)
+                    alojamento = pool_alojamentos.get_alojamento(conta_consumo.id_cliente.strip(), conta_consumo.id_contrato.strip(), conta_consumo.local_consumo.strip())
+                    if (alojamento):
+                        conta_consumo.id_alojamento = alojamento.nome
+                        conta_consumo.diretorio = alojamento.diretorio
+                        processed_list.append(conta_consumo)
                     # self._conta_consumo_2_log(info_conta, log)
 
                 except Exception as erro:
@@ -136,5 +160,13 @@ class ContaConsumoHandler:
 
         if (len(files)):
             self._result_2_excel(processed_list, error_list, ignored_list)
+
+
+        for conta in processed_list:
+            directory = self.drive.find_file(conta.diretorio, self.config.get('google drive.folder_client_id'))
+            if (directory):
+                continue
+            else:
+                self.drive.create_folder(conta.diretorio, self.config.get('google drive.folder_client_id'))
 
         return Any
