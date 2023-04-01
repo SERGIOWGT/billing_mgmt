@@ -23,13 +23,13 @@ class PoolAlojamentos:
         def filtro(el: Alojamento):            
             if el.cliente and (el.cliente != cliente):
                 return False
-                
+
             if el.conta and (el.conta != conta):
                 return False
-                
+
             if el.local and (el.local != local):
                 return False
-                
+
             return True
 
         result = [x for x in self.alojamentos if filtro(x)]

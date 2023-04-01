@@ -5,7 +5,7 @@ from .conta_consumo_base import ContaConsumoBase
 
 class ContaConsumoVodafone(ContaConsumoBase):
     def __init__(self, file_name: str):
-        super().__init__(self)
+        super().__init__()
         self.concessionaria = ConcessionariaEnum.VODAFONE
         self.tipo_servico = TipoServicoEnum.INTERNET
 
@@ -36,7 +36,7 @@ class ContaConsumoVodafone(ContaConsumoBase):
             self.data_vencimento = self._get_data(text, 'Debito a partir de', 'Valor deste mes').strip()
 
         # Ajusta as datas
-        self.data_emissao = self.convert_2_default_date(self.data_emissao, 'DMY')
-        self.data_vencimento = self.convert_2_default_date(self.data_vencimento, 'DMY', full_month=True)
+        self.data_emissao = self._convert_2_default_date(self.data_emissao, 'DMY')
+        self.data_vencimento = self._convert_2_default_date(self.data_vencimento, 'DMY', full_month=True)
 
         self._adjust_data()

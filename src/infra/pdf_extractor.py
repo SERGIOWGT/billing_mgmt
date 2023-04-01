@@ -40,8 +40,8 @@ class PdfExtractor:
 
     @staticmethod
     def get_text(file_name: str) -> str:
-        doc = pdfium.FPDF_LoadDocument(file_name, None)
-        page_count = pdfium.FPDF_GetPageCount(doc)  # get page counts
+        doc = pdfium.PdfDocument(file_name, None)
+        page_count = len(doc)  # get page counts
 
         all_text = ''
         pdf = pdfium.PdfDocument(file_name)

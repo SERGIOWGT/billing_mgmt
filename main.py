@@ -1,4 +1,3 @@
-import os
 import logging
 from dotenv import load_dotenv
 from src.domain.entities.alojamentos import PoolAlojamentos
@@ -18,33 +17,18 @@ def create_logger(name: str):
 
     return logging.getLogger(name)
 
-def get_environ_vars():
-    return (os.environ.get('IMAP_SERVER', ''), 
-                os.environ.get('USER_EMAIL', ''), 
-                os.environ.get('PASS_EMAIL', ''),  
-                os.environ.get('BASE_FOLDER', ''),     
-                os.environ.get('EMAIL_DESTINATION_FOLDER', ''))
-
 if __name__ == '__main__':
-    load_dotenv()
-
     log = create_logger(__name__)
-    log.info('Init App')
-    imap_server, user_name, password, base_folder, email_destination_folder = get_environ_vars()
-    log.info('Environment vars read')
-    download_folder = os.path.join(base_folder, 'downloads')
+    log.info('App started')
 
-    app = App(download_folder)
+
     try:
-        ApplicationException.when(not os.path.exists(download_folder), f'Path does not exist. [{download_folder}]', log)
+        config = ConfigurationApp('config\\config.json')
+        drive = GoogleDriveHandler(config.get("directories.config"))
+        log.info('Google Drive connected')
 
-        count_email = app.download_files(imap_server, user_name, password, download_folder)
-        if count_email == 0:
-            print('Nenhum arquivo baixado')
-        elif count_email == 1:
-            print('Um arquivo baixado')
-        else:
-            print(f'{count_email} arquivos baixados')
+        app = App(config, log, drive)
+        app.execute()
 
     except Exception as error:
         msg = str(error)

@@ -11,7 +11,6 @@ class ExcelReader:
         wb = xl.load_workbook(file_name)
         sheet_base = wb['Planilha1']
         rows = sheet_base.max_row
-        
         alojamentos = []
         for row in range(3, rows):
             nome = sheet_base.cell(row, 3).value
@@ -22,6 +21,6 @@ class ExcelReader:
                 local = sheet_base.cell(row, 4 + (3 * empresa)).value
 
                 if cliente or conta or local:
-                    alojamentos.append(Alojamento(empresa,nome, diretorio, str(cliente), str(conta), str(local)))
+                    alojamentos.append(Alojamento(empresa, nome, diretorio, str(cliente), str(conta), str(local)))
 
         return alojamentos

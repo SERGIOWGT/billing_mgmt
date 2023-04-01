@@ -26,8 +26,8 @@ class ContaConsumoBase:
     data_vencimento = ''
     valor = ''
     file_name = ''
-    diretorio = ''
     id_alojamento = ''
+    diretorio = ''
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -51,8 +51,9 @@ class ContaConsumoBase:
         ret = ret.replace('\r', '').replace('\n', '')
 
         return ret
-
-    def _is_date(self, str_date) -> bool:
+    
+    @staticmethod
+    def _is_date(str_date) -> bool:
         try:
             _date = datetime.strptime(str_date, '%d/%m/%Y')
         except ValueError:
