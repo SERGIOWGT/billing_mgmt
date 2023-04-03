@@ -1,18 +1,13 @@
 from typing import List
+from dataclasses import dataclass
 import pypdfium2 as pdfium
-from dataclasses import dataclass, field
+
+from .Ipdf_extractor_handler import IPdfExtractorHandler
+from .page_content import PageContent
+from .pdf_content import PdfContent
 
 @dataclass
-class PageContent:
-    lines: List[str] = field(default_factory=list)
-
-@dataclass
-class PdfContent:
-    num_pages: int = 0
-    pages: List[PageContent] = field(default_factory=list)
-
-@dataclass
-class PdfExtractor:
+class PdfExtractorHandler (IPdfExtractorHandler):
 
     def get_content(self, file_name: str, break_lines: bool = True) -> PdfContent:
         doc = pdfium.FPDF_LoadDocument(file_name, None)

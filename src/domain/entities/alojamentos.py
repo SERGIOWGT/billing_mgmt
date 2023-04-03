@@ -20,17 +20,24 @@ class PoolAlojamentos:
         self.alojamentos = alojamentos
 
     def get_alojamento(self, cliente: str, conta: str, local: str):
-        def filtro(el: Alojamento):            
-            if el.cliente and (el.cliente != cliente):
-                return False
+        def filtro(el: Alojamento):
+            teve_teste = False
+            if el.cliente and cliente:
+                teve_teste = True
+                if el.cliente != cliente:
+                    return False
 
-            if el.conta and (el.conta != conta):
-                return False
+            if el.conta and conta:
+                teve_teste = True
+                if el.conta != conta:
+                    return False
 
-            if el.local and (el.local != local):
-                return False
+            if el.local and local:
+                teve_teste = True
+                if el.local != local:
+                    return False
 
-            return True
+            return teve_teste
 
         result = [x for x in self.alojamentos if filtro(x)]
 

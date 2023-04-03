@@ -4,9 +4,12 @@ from apiclient import discovery
 from httplib2 import Http
 from oauth2client import client, file, tools
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
+from .Igoogle_drive_handler import IGoogleDriveHandler
 
-class GoogleDriveHandler:
-    SCOPE = 'https://www.googleapis.com/auth/drive'
+
+class GoogleDriveHandler (IGoogleDriveHandler):
+    _SCOPE = 'https://www.googleapis.com/auth/drive'
+    _drive = None
 
     def __init__ (self, directory: str):
         credentials_file_path = f'{directory}/credentials.json'
@@ -15,24 +18,24 @@ class GoogleDriveHandler:
         credentials = store.get()
 
         if not credentials or credentials.invalid:
-            flow = client.flow_from_clientsecrets(clientsecret_file_path, self.SCOPE)
+            flow = client.flow_from_clientsecrets(clientsecret_file_path, self._SCOPE)
             credentials = tools.run_flow(flow, store)
 
         http = credentials.authorize(Http())
-        self.drive = discovery.build('drive', 'v3', http=http)
+        self._drive = discovery.build('drive', 'v3', http=http)
 
     def get_excel_file(self, file_id: str):
-        request = self.drive.files().get_media(fileId=file_id)
+        request = self._drive.files().get_media(fileId=file_id)
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
             _, done = downloader.next_chunk()
 
-        return fh.getvalue() 
+        return fh.getvalue()
 
     def get_google_sheets_file(self, file_id: str):
-        request = self.drive.files().export_media(fileId=file_id, 
+        request = self._drive.files().export_media(fileId=file_id,
                                         mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
@@ -53,7 +56,7 @@ class GoogleDriveHandler:
         media = MediaFileUpload(local_file_name,
                                 mimetype='*/*',
                                 resumable=True)
-        return self.drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        return self._drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
         q = f" name = '{name}' "
@@ -63,7 +66,7 @@ class GoogleDriveHandler:
         page_token = None
         while True:
             # pylint: disable=maybe-no-member
-            response = self.drive.files().list(q=q,
+            response = self._drive.files().list(q=q,
                                             spaces='drive',
                                             fields='nextPageToken, '
                                                    'files(id, name, mimeType)',
@@ -85,7 +88,7 @@ class GoogleDriveHandler:
         if (parent_id):
             file_metadata["parents"] = [parent_id]
 
-        file = self.drive.files().create(body=file_metadata, fields='id').execute()
+        file = self._drive.files().create(body=file_metadata, fields='id').execute()
         return file
 
 

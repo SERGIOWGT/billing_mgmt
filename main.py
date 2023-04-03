@@ -1,9 +1,7 @@
 import logging
-from dotenv import load_dotenv
-from src.domain.entities.alojamentos import PoolAlojamentos
-from src.infra.excel_reader import ExcelReader
-from src.infra.gdrive_handler import GDriveHandler
-from src.infra.exception_handler import ApplicationException
+import os
+from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
+from src.infra.app_configuration_reader.app_configuration_reader import AppConfigurationReader
 from src.app import App
 
 def create_logger(name: str):
@@ -22,23 +20,19 @@ if __name__ == '__main__':
     log.info('App started')
 
 
-    try:
-        config = ConfigurationApp('config\\config.json')
-        drive = GoogleDriveHandler(config.get("directories.config"))
-        log.info('Google Drive connected')
+    #try:
+    config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
+    app_config = AppConfigurationReader(os.path.join(config_dir, 'config.json'))
+    log.info('Config file read')
 
-        app = App(config, log, drive)
-        app.execute()
+    drive = GoogleDriveHandler(config_dir)
+    log.info('Google drive connected')
 
-    except Exception as error:
-        msg = str(error)
-        log.critical(msg)
-        print(msg)
+    app = App(app_config, drive, log)
+    app.execute()
+
+    #except Exception as error:
+    #    msg = str(error)
+    #    log.critical(msg)
+    #    print(msg)
   
-    try:
-        alojamentos = ExcelReader().get_database('Alojamentos.xlsx')        
-        app.process_downloaded_files(log, PoolAlojamentos(alojamentos))
-    except Exception as error:
-        msg = str(error)
-        log.critical(msg)
-        print(msg)

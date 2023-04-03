@@ -27,7 +27,8 @@ class ContaConsumoBase:
     valor = ''
     file_name = ''
     id_alojamento = ''
-    diretorio = ''
+    gdrive_dir = ''
+        
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -51,7 +52,7 @@ class ContaConsumoBase:
         ret = ret.replace('\r', '').replace('\n', '')
 
         return ret
-    
+
     @staticmethod
     def _is_date(str_date) -> bool:
         try:

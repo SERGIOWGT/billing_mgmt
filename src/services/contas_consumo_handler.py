@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
 from src.domain.models.conta_consumo import ContaConsumo
 from src.infra.exception_handler import ApplicationException
-from src.conta_consumo_factory import ContaConsumoFactory
-from src.infra.pdf_extractor import PdfExtractor
+from src.services.conta_consumo_factory import ContaConsumoFactory
+from src.infra.pdf_extractor_handler.pdf_extractor_handler import PdfExtractorHandler
 from src.domain.entities.alojamentos import Alojamento, PoolAlojamentos
 
 

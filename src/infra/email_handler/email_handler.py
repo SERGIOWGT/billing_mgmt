@@ -9,11 +9,11 @@ import quopri
 import re
 from typing import List
 
+from .Imail_handler import IEmailHandler
 from src.infra.exception_handler import ApplicationException
 
-
 @dataclass
-class EmailHandler:
+class EmailHandler(IEmailHandler):
     imap_session: imaplib.IMAP4_SSL = None
 
     def logout(self)->None:
@@ -124,4 +124,3 @@ class EmailHandler:
     def move(self, message_uid: int, destination_folder: str) -> None:
         (result, _) = self.imap_session.uid('move', message_uid, destination_folder)
         ApplicationException.when(result != 'OK', f'Error moving message {message_uid}')
-

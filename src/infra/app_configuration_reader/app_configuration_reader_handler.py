@@ -1,10 +1,11 @@
 import json
 import os
 from dataclasses import dataclass
-from .exception_handler import ApplicationException
+from .iapp_configuration_reader import IAppConfigurationReaderHandler
+from ..exception_handler import ApplicationException
 
 @dataclass
-class ConfigurationApp:
+class AppConfigurationReaderHandler (IAppConfigurationReaderHandler):
     _dict_config = {}
 
     def __init__(self, file_name: str):
