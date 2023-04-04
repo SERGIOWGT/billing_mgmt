@@ -13,7 +13,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
 
     def __init__ (self, directory: str):
         credentials_file_path = f'{directory}/credentials.json'
-        clientsecret_file_path = f'{directory}/credentials/client_secret.json'
+        clientsecret_file_path = f'{directory}/client_secret.json'
         store = file.Storage(credentials_file_path)
         credentials = store.get()
 
@@ -45,19 +45,19 @@ class GoogleDriveHandler (IGoogleDriveHandler):
 
         return fh.getvalue()
 
-    def upload_file(self, local_file_name: str,  file_name: str, parent_id: str=''):
+    def upload_file(self, local_file_name: str,  file_name: str, parents=[]):
         file_metadata = {
             'name': file_name,
-            'mimeType': '*/*',
+            'mimeType': 'application/pdf',
         }
-        if (parent_id):
-            file_metadata["parents"] = [parent_id]
+        if (len(parents) > 0):
+            file_metadata["parents"] = parents
 
         media = MediaFileUpload(local_file_name,
                                 mimetype='*/*',
                                 resumable=True)
         return self._drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
-
+    
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
         q = f" name = '{name}' "
         if (parent_id):

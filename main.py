@@ -19,7 +19,6 @@ if __name__ == '__main__':
     log = create_logger(__name__)
     log.info('App started')
 
-
     #try:
     config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
     app_config = AppConfigurationReader(os.path.join(config_dir, 'config.json'))

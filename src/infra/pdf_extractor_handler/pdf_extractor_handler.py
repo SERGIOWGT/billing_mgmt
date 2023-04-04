@@ -1,4 +1,3 @@
-from typing import List
 from dataclasses import dataclass
 import pypdfium2 as pdfium
 

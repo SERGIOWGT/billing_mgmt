@@ -3,7 +3,6 @@ from typing import Optional
 
 from src.domain.entities import *
 
-
 @dataclass
 class ContaConsumoFactory:
     @staticmethod

@@ -1,8 +1,9 @@
 import io
 import os
+from datetime import datetime, date
+import pandas as pd
 from typing import Any, List
 from dataclasses import dataclass
-import pandas as pd
 
 from src.domain.enums.tipo_servico_enum import TipoServicoEnum
 
@@ -63,19 +64,21 @@ class App:
 
         return PoolAlojamentos(alojamentos)
 
-    def _handle_ok_list(self, data: list[Any]) -> None:
+    def _handle_ok_list(self, data: list[Any]) -> Any:
         alojamentos = self._get_alojamentos()
-        
-        self._not_found_list = []
-        self._new_ok_list = []
+
+        not_found_list = []
+        new_ok_list = []
         for conta in data:
             alojamento = alojamentos.get_alojamento(conta.id_cliente.strip(), conta.id_contrato.strip(), conta.local_consumo.strip())
             if (alojamento):
                 conta.id_alojamento = alojamento.nome
                 conta.diretorio = alojamento.diretorio
-                self._new_ok_list.append(conta)
+                new_ok_list.append(conta)
             else:
-                self._not_found_list.append(conta)
+                not_found_list.append(conta)
+
+        return (new_ok_list, not_found_list)
 
     def _create_df_default(self, list: List[ContaConsumo]) -> Any:
         columns = ['Alojamento', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
@@ -96,7 +99,7 @@ class App:
             _dict['Emissao'] = line.data_emissao
             _dict['Vencimento'] = line.data_vencimento
             _dict['Valor'] = line.valor
-            _dict['Diretorio Google'] = line.gdrive_dir
+            _dict['Diretorio Google'] = line.diretorio
             _dict['Arquivo'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
@@ -110,12 +113,16 @@ class App:
 
         return df
 
-    def _result_2_excel(self, error_list, ignored_list):
-        df_ok = self._create_df_default(self._new_ok_list)
-        df_nf = self._create_df_default(self._not_found_list)
+    def _result_2_excel(self, new_ok_list, not_found_list, error_list, ignored_list):
+        df_ok = self._create_df_default(new_ok_list)
+        df_nf = self._create_df_default(not_found_list)
         df_error = self._create_df_default(error_list)
         df_ignored = self._create_df_ignored(ignored_list)
-        output_file_name = os.path.join(self.export_folder, 'output.xlsx')
+
+        now = datetime.now()
+        output_file_name = f'output_{now.strftime("%Y-%m-%d.%H.%M.%S")}.xlsx'
+
+        output_file_name = os.path.join(self.export_folder, output_file_name)
 
         with pd.ExcelWriter(output_file_name) as writer:
             df_ok.to_excel(writer, sheet_name='Processados', index=False)
@@ -126,10 +133,23 @@ class App:
     def _process_downloaded_files(self) -> None:
         download_folder = self._app_config.get('directories.downloads')
         ok_list, error_list, ignored_list = ProcessFiles.execute(self._log, download_folder)
-        
-        self._handle_ok_list(ok_list)
-        self._result_2_excel(error_list, ignored_list)
-              
+
+        (new_ok_list, not_found_list) = self._handle_ok_list(ok_list)
+        self._result_2_excel(new_ok_list, not_found_list, error_list, ignored_list)
+
+        parent_id = self._app_config.get('google drive.folder_client_id')
+        for conta_ok in new_ok_list:
+            new_parent_id = self._drive.find_file(conta_ok.diretorio, parent_id)
+            if (new_parent_id is None):
+                new_parent_id = self._drive.create_folder(conta_ok.diretorio, parent_id)
+
+
+            parents = [new_parent_id]
+            new_file_name = self.mountFileName(conta_ok.data_vencimento, conta_ok.concessionaria, conta_ok.id_alojamento)
+            xxx = self._drive.upload_file(conta_ok.file_name, new_file_name, parents)
+
+            print(conta_ok)
+
     def _get_and_connect_email(self)->IEmailHandler:
         email = EmailHandler()
         try:
@@ -159,6 +179,18 @@ class App:
             raise
 
         self._process_downloaded_files()
-        
+
         email.logout()
-       
+
+    def mountFileName(self, dt_vencimento: date, concessionaria: ConcessionariaEnum, alojamento: str) -> str:
+
+        _name_list = ['', 'EDP', 'Galp', 'Aguas', 'Aguas', 'EPAL', 'Altice(MEO)', 'NOS', 'Vodafone']
+
+        _dt_vencimento = dt_vencimento.strftime("%Y.%m.%d")
+        _concessionaria = _name_list[concessionaria]
+        _vet = alojamento.split('_')
+        _alojamento = alojamento
+        if (len(_vet) > 1):
+            _alojamento = f'{_vet[0]}_{_vet[1]}'
+
+        return f'{dt_vencimento} {_concessionaria} - {alojamento}.pdf'
