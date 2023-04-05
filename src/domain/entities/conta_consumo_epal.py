@@ -1,10 +1,10 @@
 from unidecode import unidecode
-from src.domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
+from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
 from .conta_consumo_base import ContaConsumoBase
 
 
 class ContaConsumoEpal(ContaConsumoBase):
-    def __init__(self, file_name: str):
+    def __init__(self):
         super().__init__(self)
         self.concessionaria = ConcessionariaEnum.EPAL
         self.tipo_servico = TipoServicoEnum.AGUA
@@ -26,16 +26,20 @@ class ContaConsumoEpal(ContaConsumoBase):
         self.id_contrato = self._get_data(text, 'CONTA CLIENTE No', '\r\n')
         self.nome_cliente = self._get_data(text, 'Titular do Contrato - ', 'NIF -')
 
-        self.valor = self._get_data(text, 'Valor a Pagar', 'EUR')
+
         self.periodo_referencia = self._get_data(text, 'Periodo de Faturacao de', '\r\n')
-        self.data_vencimento = self._get_data(text, 'Debito a partir de ', num_chars=10)
+        self.periodo_referencia = self.periodo_referencia.replace(' a ', '~')
+        self.periodo_referencia = self.periodo_referencia.replace('.', '-')
+        
+        self.str_valor = self._get_data(text, 'Valor a Pagar', 'EUR')
+        self.str_vencimento = self._get_data(text, 'Debito a partir de ', num_chars=10)
 
         # WARN: data de emissao depende do id_documento
         str_emissao = f'{self.id_documento}, emitida em '
-        self.data_emissao = self._get_data(text, str_emissao, num_chars=10)
+        self.str_emissao = self._get_data(text, str_emissao, num_chars=10)
 
         # Ajusta as datas
-        self.data_emissao = self._convert_2_default_date(self.data_emissao, 'YMD')
-        self.data_vencimento = self._convert_2_default_date(self.data_vencimento, 'YMD')
+        self.str_emissao = self._convert_2_default_date(self.str_emissao, 'YMD')
+        self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'YMD')
 
         self._adjust_data()

@@ -1,9 +1,9 @@
-from src.domain.models.conta_consumo import ConcessionariaEnum, ContaConsumo, TipoServicoEnum
+from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
 from .conta_consumo_aguas_gaia import ContaConsumoAguasDeGaia
 
 
 class ContaConsumoAguasDePorto(ContaConsumoAguasDeGaia):
-    def __init__(self, file_name: str):
+    def __init__(self):
         self.concessionaria = ConcessionariaEnum.AGUAS_DE_PORTO
         self.tipo_servico = TipoServicoEnum.AGUA
 

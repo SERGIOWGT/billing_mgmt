@@ -16,12 +16,16 @@ class ProcessFiles:
             log.info(f'Processing file: {complete_file_name}')
 
             all_text = PdfExtractorHandler().get_text(complete_file_name)
-            conta_consumo = ContaConsumoFactory().execute(all_text, file_name)
+            conta_consumo = ContaConsumoFactory().execute(all_text)
             if (conta_consumo):
                 conta_consumo.file_name = complete_file_name
                 try:
                     conta_consumo.create(all_text)
-                    processed_list.append(conta_consumo)
+                    if (conta_consumo.dt_vencimento is None) or (conta_consumo.valor is None) or (conta_consumo.dt_emissao is None):
+                        error_list.append(conta_consumo)
+                    else:
+                        processed_list.append(conta_consumo)
+
                 except Exception:
                     error_list.append(conta_consumo)
             else:

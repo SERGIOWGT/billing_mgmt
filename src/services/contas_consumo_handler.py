@@ -73,9 +73,9 @@ class ContaConsumoHandler:
             _dict['Local / Instalacao'] = line.local_consumo
             _dict['N. Documento / N. Fatura'] = line.id_documento
             _dict['Periodo Referencia'] = line.periodo_referencia
-            _dict['Emissao'] = line.data_emissao
-            _dict['Vencimento'] = line.data_vencimento
-            _dict['Valor'] = line.valor
+            _dict['Emissao'] = line.str_emissao
+            _dict['Vencimento'] = line.str_vencimento
+            _dict['Valor'] = line.str_valor
             _dict['Alojamento'] = line.id_alojamento
             _dict['Diretorio'] = line.diretorio
             _dict['Arquivo'] = line.file_name
@@ -115,7 +115,7 @@ class ContaConsumoHandler:
         self.log.info(f'==> Id Contribuinte: {info_conta.id_contribuinte}')
         self.log.info(f'==> Id Contrato: {info_conta.id_contrato}')
         self.log.info(f'==> Mes / periodo referencia: {info_conta.periodo_referencia}')
-        self.log.info(f'==> Emissao/Vencimento: {info_conta.data_emissao} / {info_conta.data_vencimento}')
+        self.log.info(f'==> Emissao/Vencimento: {info_conta.str_emissao} / {info_conta.str_vencimento}')
         self.log.info(f'==> Valor: {info_conta.valor}')
         self.log.info(info_conta.__dict__)
 

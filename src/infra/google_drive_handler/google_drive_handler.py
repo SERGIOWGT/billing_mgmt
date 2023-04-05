@@ -57,7 +57,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
                                 mimetype='*/*',
                                 resumable=True)
         return self._drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    
+
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
         q = f" name = '{name}' "
         if (parent_id):
@@ -88,8 +88,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         if (parent_id):
             file_metadata["parents"] = [parent_id]
 
-        file = self._drive.files().create(body=file_metadata, fields='id').execute()
-        return file
+        return self._drive.files().create(body=file_metadata, fields='id, name, parents').execute()
 
 
 #drive = GoogleDriveHandler('./credentials')

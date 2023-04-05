@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import datetime, date
 from abc import abstractmethod
 from dataclasses import dataclass
 import re
+
+from typing import Optional
 from src.domain.enums.tipo_servico_enum import TipoServicoEnum
 from src.domain.enums.concessionaria_enum import ConcessionariaEnum
 
@@ -22,13 +24,20 @@ class ContaConsumoBase:
     nome_cliente = ''
     periodo_referencia = ''
     local_consumo = ''
-    data_emissao = ''
-    data_vencimento = ''
-    valor = ''
+    str_emissao = ''
+    str_vencimento = ''
+    str_inicio_referencia = ''
+    str_fim_referencia = ''
+    str_valor = ''
     file_name = ''
     id_alojamento = ''
-    gdrive_dir = ''
-        
+    diretorio = ''
+    
+    dt_inicio_referencia: Optional[date] = None
+    dt_fim_referencia: Optional[date] = None
+    dt_vencimento: Optional[date] = None
+    dt_emissao: Optional[date] = None
+    valor: Optional[float] = None
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -92,6 +101,15 @@ class ContaConsumoBase:
         return str_date
 
     def _adjust_data(self) -> None:
+        def _str_2_date(value: str) -> date:
+            _dt_retorno = None
+            if (value):
+                try:
+                    _dt_retorno = datetime.strptime(value, '%d/%m/%Y')
+                except Exception:
+                    _dt_retorno = None
+            return _dt_retorno
+
         def _clear_value(value: str) -> str:
             return re.sub(r'[^0-9,]', '', value) if value else ''
 
@@ -103,7 +121,24 @@ class ContaConsumoBase:
         self.id_contrato = _clear_data(self.id_contrato)
         self.id_contribuinte = _clear_data(self.id_contribuinte)
         self.local_consumo = _clear_data(self.local_consumo)
-        self.valor = _clear_value(self.valor)
+        self.str_valor = _clear_value(self.str_valor)
+
+        vet = self.periodo_referencia.split('~')
+        if (len(vet) == 2):
+            self.str_inicio_referencia = self._convert_2_default_date(vet[0].strip(), 'YMD', full_month=False)
+            self.str_fim_referencia = self._convert_2_default_date(vet[1].strip(), 'YMD', full_month=False)
+
+        self.dt_vencimento = _str_2_date(self.str_vencimento)
+        self.dt_emissao = _str_2_date(self.str_emissao)
+        self.dt_inicio_referencia = _str_2_date(self.str_inicio_referencia)
+        self.dt_fim_referencia = _str_2_date(self.str_fim_referencia)
+        self.dt_vencimento = _str_2_date(self.str_vencimento)
+
+        if (self.str_valor):
+            try:
+               self.valor = float(self.str_valor.replace(',', '.'))
+            except Exception:
+                self.valor = None
 
     @abstractmethod
     def create(self, text: str) -> None:

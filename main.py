@@ -25,6 +25,7 @@ if __name__ == '__main__':
     log.info('Config file read')
 
     drive = GoogleDriveHandler(config_dir)
+    #drive = GoogleDriveHandler2()
     log.info('Google drive connected')
 
     app = App(app_config, drive, log)

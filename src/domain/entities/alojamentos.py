@@ -19,7 +19,7 @@ class PoolAlojamentos:
     def __init__(self, alojamentos: List[Alojamento]):
         self.alojamentos = alojamentos
 
-    def get_alojamento(self, cliente: str, conta: str, local: str):
+    def get_alojamento(self, concessionaria, cliente: str, conta: str, local: str):
         def filtro(el: Alojamento):
             teve_teste = False
             if el.cliente and cliente:
@@ -39,10 +39,10 @@ class PoolAlojamentos:
 
             return teve_teste
 
-        result = [x for x in self.alojamentos if filtro(x)]
+        for_debug = [x for x in self.alojamentos if x.concessionaria == concessionaria]
+        for x in for_debug:
+            if filtro(x):
+                return x
 
-        if (len(result) != 1):
-            return None
- 
-        return result[0]
+        return None
 
