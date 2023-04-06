@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, List, Optional
 from abc import ABC, abstractmethod
 
 class IGoogleDriveHandler(ABC):
@@ -12,7 +12,7 @@ class IGoogleDriveHandler(ABC):
         ...
 
     @abstractmethod
-    def upload_file(self, local_file_name: str,  file_name: str, parent_id: str='') -> Any:
+    def upload_file(self, local_file_name: str,  file_name: str, parents: List) -> Any:
         ...
 
     @abstractmethod
