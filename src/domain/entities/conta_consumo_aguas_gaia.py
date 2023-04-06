@@ -22,10 +22,12 @@ class ContaConsumoAguasDeGaia(ContaConsumoBase):
         self.local_consumo = self._get_data(text, 'Local Consumo:', '\r\n')
         self.id_contribuinte = self._get_data(text, 'NIF:', '\r\n')
         self.str_vencimento = self._get_data(text, 'Debito a partir de\r\n', '\r\n')
+        if (self.str_vencimento == ''):
+            self.str_vencimento = self._get_data(text, 'Data limite pagamento\r\n', '\r\n')
+            
         self.str_emissao = self._get_data(text, 'Data de Emissao\r\n', '\r\n')
-        
+
         self.periodo_referencia = self._get_data(text, 'Periodo Faturacao:', '\r\n')
-        
 
         # WARN: id_documento Tem mas esta colado no campo titular da conta
         self.id_documento = self._get_data(text, 'Titular da conta:\r\n', '\r\n')

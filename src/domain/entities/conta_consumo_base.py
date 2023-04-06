@@ -31,7 +31,9 @@ class ContaConsumoBase:
     str_valor = ''
     file_name = ''
     id_alojamento = ''
-    diretorio = ''
+    diretorio_google = ''
+    nome_arquivo_google = ''
+    str_erro = ''
     
     dt_inicio_referencia: Optional[date] = None
     dt_fim_referencia: Optional[date] = None
@@ -65,7 +67,7 @@ class ContaConsumoBase:
     @staticmethod
     def _is_date(str_date) -> bool:
         try:
-            _date = datetime.strptime(str_date, '%d/%m/%Y')
+            _date = datetime.strptime(str_date, '%Y/%m/%d')
         except ValueError:
             return False
 
@@ -91,9 +93,10 @@ class ContaConsumoBase:
 
         format = format.upper()
         if (format == 'YMD'):
-            str_date = f'{vet[2]}/{vet[1]}/{vet[0]}'
-        elif (format == 'DMY'):
             str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
+        elif (format == 'DMY'):
+           str_date = f'{vet[2]}/{vet[1]}/{vet[0]}'
+#            str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
 
         if not self._is_date(str_date):
             return ''
@@ -105,7 +108,7 @@ class ContaConsumoBase:
             _dt_retorno = None
             if (value):
                 try:
-                    _dt_retorno = datetime.strptime(value, '%d/%m/%Y')
+                    _dt_retorno = datetime.strptime(value, '%Y/%m/%d')
                 except Exception:
                     _dt_retorno = None
             return _dt_retorno
@@ -140,6 +143,18 @@ class ContaConsumoBase:
             except Exception:
                 self.valor = None
 
-    @abstractmethod
-    def create(self, text: str) -> None:
-        pass
+    def is_ok(self)->bool:
+        if (self.str_vencimento.strip() == ''):
+            return False
+        
+        if (self.id_cliente == '') and (self.id_contrato == '') and (self.local_consumo == ''):
+            return False
+        
+        if (self.dt_vencimento is None) or (self.valor is None) or (self.dt_emissao is None):
+            return False
+        
+        return True
+       
+        
+
+            

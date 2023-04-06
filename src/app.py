@@ -77,16 +77,17 @@ class App:
             alojamento = alojamentos.get_alojamento(conta.concessionaria, conta.id_cliente.strip(), conta.id_contrato.strip(), conta.local_consumo.strip())
             if (alojamento):
                 conta.id_alojamento = alojamento.nome
-                conta.diretorio = alojamento.diretorio
+                conta.diretorio_google = alojamento.diretorio
+                conta.nome_arquivo_google = self.mountFileName(conta.dt_vencimento, conta.concessionaria, conta.id_alojamento)
                 new_ok_list.append(conta)
             else:
                 not_found_list.append(conta)
 
         return (new_ok_list, not_found_list)
 
-    def _create_df_default(self, list: List[ContaConsumoBase]) -> Any:
+    def _create_df_ok(self, list: List[ContaConsumoBase]) -> Any:
         columns = ['Alojamento', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo']
+                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -105,21 +106,21 @@ class App:
             _dict['Emissao'] = line.str_emissao
             _dict['Vencimento'] = line.str_vencimento
             _dict['Valor'] = line.str_valor
-            _dict['Diretorio Google'] = line.diretorio
-            _dict['Arquivo'] = line.file_name
+            _dict['Diretorio Google'] = line.diretorio_google
+            _dict['Arquivo Google'] = line.nome_arquivo_google
+            _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-
-    def _create_df_error(self, list: List[ContaConsumoBase]) -> Any:
-        columns = ['Alojamento', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                 'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo']
+    def _create_df_sem_alojamento(self, list: List[ContaConsumoBase]) -> Any:
+        columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+                 'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 
+                 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
-            _dict['Alojamento'] = line.id_alojamento
             _dict['Concessionaria'] = ConcessionariaEnum(line.concessionaria).name
             _dict['Tipo Servico'] = TipoServicoEnum(line.tipo_servico).name
             _dict['N. Contrato'] = line.id_contrato
@@ -128,11 +129,39 @@ class App:
             _dict['Local / Instalacao'] = line.local_consumo
             _dict['N. Documento / N. Fatura'] = line.id_documento
             _dict['Periodo Referencia'] = line.periodo_referencia
+            _dict['Inicio Referencia'] = line.str_inicio_referencia
+            _dict['Fim Referencia'] = line.str_fim_referencia
             _dict['Emissao'] = line.str_emissao
             _dict['Vencimento'] = line.str_vencimento
             _dict['Valor'] = line.str_valor
-            _dict['Diretorio Google'] = line.diretorio
-            _dict['Arquivo'] = line.file_name
+            _dict['Arquivo Original'] = line.file_name
+
+            df = pd.concat([df, pd.DataFrame.from_records([_dict])])
+        return df
+
+    def _create_df_error(self, list: List[ContaConsumoBase]) -> Any:
+        columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Erro', 'Arquivo Original']
+
+        df = pd.DataFrame(columns=columns)
+        for line in list:
+            _dict = {}
+            _dict['Concessionaria'] = ConcessionariaEnum(line.concessionaria).name
+            _dict['Tipo Servico'] = TipoServicoEnum(line.tipo_servico).name
+            _dict['N. Contrato'] = line.id_contrato
+            _dict['N. Cliente'] = line.id_cliente
+            _dict['N. Contribuinte'] = line.id_contribuinte
+            _dict['Local / Instalacao'] = line.local_consumo
+            _dict['N. Documento / N. Fatura'] = line.id_documento
+            _dict['Periodo Referencia'] = line.periodo_referencia
+            _dict['Inicio Referencia'] = line.str_inicio_referencia
+            _dict['Fim Referencia'] = line.str_fim_referencia
+            _dict['Emissao'] = line.str_emissao
+            _dict['Vencimento'] = line.str_vencimento
+            _dict['Valor'] = line.str_valor
+            _dict['Erro'] = line.str_erro
+            _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
@@ -146,8 +175,12 @@ class App:
         return df
 
     def _result_2_excel(self, new_ok_list, not_found_list, error_list, ignored_list):
-        df_ok = self._create_df_default(new_ok_list)
-        df_nf = self._create_df_default(not_found_list)
+        new_ok_list.sort(key=lambda x: x.concessionaria)
+        not_found_list.sort(key=lambda x: x.concessionaria)
+        error_list.sort(key=lambda x: x.concessionaria)
+
+        df_ok = self._create_df_ok(new_ok_list)
+        df_nf = self._create_df_sem_alojamento(not_found_list)
         df_error = self._create_df_error(error_list)
         df_ignored = self._create_df_ignored(ignored_list)
 
@@ -171,13 +204,13 @@ class App:
 
         parent_id = self._app_config.get('google drive.folder_client_id')
         for conta_ok in new_ok_list:
-            new_parent_id = self._drive.find_file(conta_ok.diretorio, parent_id)
+            new_parent_id = self._drive.find_file(conta_ok.diretorio_google, parent_id)
             if (new_parent_id is None):
-                new_folder = self._drive.create_folder(conta_ok.diretorio, parent_id)
-                self._log.info(f'Creating google drive directory {conta_ok.diretorio}')
+                new_folder = self._drive.create_folder(conta_ok.diretorio_google, parent_id)
+                self._log.info(f'Creating google drive directory {conta_ok.diretorio_google}')
                 time.sleep(3)
                 while (True):
-                    new_parent_id = self._drive.find_file(conta_ok.diretorio, parent_id)
+                    new_parent_id = self._drive.find_file(conta_ok.diretorio_google, parent_id)
                     if (new_parent_id):
                         break
                     time.sleep(3)
@@ -186,9 +219,8 @@ class App:
                 new_folder = new_parent_id
 
             parents = [new_parent_id]
-            new_file_name = self.mountFileName(conta_ok.dt_vencimento, conta_ok.concessionaria, conta_ok.id_alojamento)
-            self._log.info(f'Uploading file {new_file_name}')
-            self._drive.upload_file(conta_ok.file_name, new_file_name, parents)
+            self._log.info(f'Uploading file {conta_ok.nome_arquivo_google}')
+            self._drive.upload_file(conta_ok.file_name, conta_ok.nome_arquivo_google, parents)
 
     def _get_and_connect_email(self)->IEmailHandler:
         email = EmailHandler()
@@ -233,4 +265,4 @@ class App:
         if (len(_vet) > 1):
             _alojamento = f'{_vet[0]}_{_vet[1]}'
 
-        return f'{_dt_vencimento} {_concessionaria} - {alojamento}.pdf'
+        return f'{_dt_vencimento} {_concessionaria} - {_alojamento}.pdf'

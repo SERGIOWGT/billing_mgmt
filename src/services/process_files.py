@@ -21,7 +21,11 @@ class ProcessFiles:
                 conta_consumo.file_name = complete_file_name
                 try:
                     conta_consumo.create(all_text)
-                    if (conta_consumo.dt_vencimento is None) or (conta_consumo.valor is None) or (conta_consumo.dt_emissao is None):
+                    if (conta_consumo.id_documento == '106007420385'):
+                        a = 0
+                    
+                    if (conta_consumo.is_ok() is False):
+                    
                         error_list.append(conta_consumo)
                     else:
                         processed_list.append(conta_consumo)
