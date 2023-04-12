@@ -17,3 +17,4 @@ src/__pycache__/
 .env
 
 temp/*.*
+exports/

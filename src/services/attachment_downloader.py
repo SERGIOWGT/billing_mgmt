@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from src.infra.email_handler.Imail_handler import IEmailHandler
 
 @dataclass
-class DownloadAttachmentHandler:
+class AttachmentDownloader:
     @staticmethod
     def execute(path_to_save, input_email_folder, output_email_folder, log, email: IEmailHandler, ) -> int:
         num_emails = 0

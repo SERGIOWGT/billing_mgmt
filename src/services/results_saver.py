@@ -1,17 +1,14 @@
 from dataclasses import dataclass
 import os
-import time
 from typing import Any, List
-from datetime import datetime, date
+from datetime import datetime
 import pandas as pd
 from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
 from src.domain.entities.conta_consumo_base import ContaConsumoBase
 from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
-from src.domain.entities.alojamentos import PoolAlojamentos
-
 
 @dataclass
-class UploadSaveResults:
+class ResultsSaver:
     _log: Any
     _drive: IGoogleDriveHandler
 
@@ -109,7 +106,7 @@ class UploadSaveResults:
 
         return df
 
-    def _result_2_excel(self, export_folder: str, new_ok_list: List[ContaConsumoBase], not_found_list: List[ContaConsumoBase], error_list: List[ContaConsumoBase], ignored_list: List[Any]):
+    def execute (self, export_folder: str, new_ok_list: List[ContaConsumoBase], not_found_list: List[ContaConsumoBase], error_list: List[ContaConsumoBase], ignored_list: List[Any]):
         new_ok_list.sort(key=lambda x: x.concessionaria)
         not_found_list.sort(key=lambda x: x.concessionaria)
         error_list.sort(key=lambda x: x.concessionaria)
@@ -127,54 +124,3 @@ class UploadSaveResults:
             df_nf.to_excel(writer, sheet_name='Sem Alojamentos', index=False)
             df_error.to_excel(writer, sheet_name='Erros', index=False)
             df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
-
-    def _handle_ok_list(self, alojamentos: PoolAlojamentos, data: list[Any]) -> Any:
-        not_found_list = []
-        new_ok_list = []
-        for conta in data:
-            alojamento = alojamentos.get_alojamento(conta.concessionaria, conta.id_cliente.strip(), conta.id_contrato.strip(), conta.local_consumo.strip())
-            if (alojamento):
-                conta.id_alojamento = alojamento.nome
-                conta.diretorio_google = alojamento.diretorio
-                conta.nome_arquivo_google = self._mountFileName(conta.dt_vencimento, conta.concessionaria, conta.id_alojamento)
-                new_ok_list.append(conta)
-            else:
-                not_found_list.append(conta)
-
-        return (new_ok_list, not_found_list)
-
-    def _mountFileName(self, dt_vencimento: date, concessionaria: ConcessionariaEnum, alojamento: str) -> str:
-
-        _name_list = ['', 'EDP', 'Galp', 'Aguas', 'Aguas', 'EPAL', 'Altice(MEO)', 'NOS', 'Vodafone']
-
-        _dt_vencimento = dt_vencimento.strftime("%Y.%m.%d")
-        _concessionaria = _name_list[concessionaria]
-        _vet = alojamento.split('_')
-        _alojamento = alojamento
-        if (len(_vet) > 1):
-            _alojamento = f'{_vet[0]}_{_vet[1]}'
-
-        return f'{_dt_vencimento} {_concessionaria} - {_alojamento}.pdf'
-
-    def execute(self, folder_base_id: str, export_folder: str, alojamentos: PoolAlojamentos, ok_list: List[ContaConsumoBase], error_list: List[ContaConsumoBase], ignored_list: List[Any])->None:
-        (new_ok_list, not_found_list) = self._handle_ok_list(alojamentos, ok_list)
-        self._result_2_excel(export_folder, new_ok_list, not_found_list, error_list, ignored_list)
-
-        for conta_ok in new_ok_list:
-            new_parent_id = self._drive.find_file(conta_ok.diretorio_google, folder_base_id)
-            if (new_parent_id is None):
-                new_folder = self._drive.create_folder(conta_ok.diretorio_google, folder_base_id)
-                self._log.info(f'Creating google drive directory {conta_ok.diretorio_google}')
-                time.sleep(3)
-                while (True):
-                    new_parent_id = self._drive.find_file(conta_ok.diretorio_google, folder_base_id)
-                    if (new_parent_id):
-                        break
-                    time.sleep(3)
-
-                self._log.info('Created')
-                new_folder = new_parent_id
-
-            parents: List[str] = [new_parent_id]
-            self._log.info(f'Uploading file {conta_ok.nome_arquivo_google}')
-            self._drive.upload_file(conta_ok.file_name, conta_ok.nome_arquivo_google, parents)

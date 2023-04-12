@@ -1,17 +1,17 @@
 import io
 import os
-import time
 from dataclasses import dataclass
 import pandas as pd
+from src.services.results_saver import ResultsSaver
 
 from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
 from src.domain.enums.concessionaria_enum import ConcessionariaEnum
 from src.domain.entities.alojamentos import Alojamento, PoolAlojamentos
-from src.services.process_files import ProcessFiles
+from src.services.files_handler import FilesHandler
 from src.infra.email_handler.Imail_handler import IEmailHandler
 from src.infra.email_handler.email_handler import EmailHandler
-from src.services.download_attachment_handler import DownloadAttachmentHandler
-from src.services.upload_save_results import UploadSaveResults
+from src.services.attachment_downloader import AttachmentDownloader
+from src.services.results_uploader import ResultsUploader
 
 from src.infra.app_configuration_reader.iapp_configuration_reader import IAppConfigurationReader
 from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
@@ -75,20 +75,23 @@ class App:
 
     def _download_emails(self, email) -> None:
         path_to_save = self._app_config.get('directories.downloads')
-        ApplicationException.when(not os.path.exists(path_to_save), f'Path does not exist. [{path_to_save}]', self._log)
+        ApplicationException.when(not os.path.exists(str(path_to_save)), f'Path does not exist. [{path_to_save}]', self._log)
         input_email_folder = self._app_config.get('email.input_folder')
         output_email_folder = self._app_config.get('email.output_folder')
-        DownloadAttachmentHandler.execute(path_to_save, input_email_folder, output_email_folder, self._log, email)
+        AttachmentDownloader.execute(path_to_save, input_email_folder, output_email_folder, self._log, email)
 
     def _process_downloaded_files(self) -> None:
         download_folder = self._app_config.get('directories.downloads')
-        ok_list, error_list, ignored_list = ProcessFiles.execute(self._log, download_folder)
-
-        upload_save_results = UploadSaveResults(self._log, self._drive)
-        folder_base_id = self._app_config.get('google drive.folder_client_id')
-        export_folder = self._app_config.get('directories.exports')
         alojamentos = self._get_alojamentos()
-        upload_save_results.execute(folder_base_id, export_folder, alojamentos, ok_list, error_list, ignored_list)
+        ok_list, not_found_list, error_list, ignored_list = FilesHandler.execute(self._log, str(download_folder), alojamentos)
+
+        #uploader = ResultsUploader(self._log, self._drive)
+        #folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
+        #uploader.execute(folder_base_id, ok_list)
+
+        saver = ResultsSaver(self._log, self._drive)
+        export_folder = str(self._app_config.get('directories.exports'))
+        saver.execute(export_folder, ok_list, not_found_list, error_list, ignored_list)
 
     def execute(self):
         email = self._get_and_connect_email()

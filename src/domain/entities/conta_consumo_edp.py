@@ -30,22 +30,48 @@ class ContaConsumoEDP(ContaConsumoBase):
 
         return ret
 
+    def _get_id_contrato(self, text: str):
+        start_pos = 0
+        start_pos = text.find('meus dados')
+        if start_pos <= 0:
+            return ''
+
+        str_aux = 'digo de contrato'
+        start_pos = text.find(str_aux, start_pos+len(str_aux)+1)
+        if start_pos <= 0:
+            return ''
+
+        str_aux = '\r\n'
+        end_pos = text.find(str_aux, start_pos+len(str_aux)+1)
+        if end_pos <= 0:
+            return ''
+        new_pos = end_pos + len(str_aux)
+        id_contrato = ''
+        contador = new_pos
+        while ((id_contrato+text[contador]).isnumeric()):
+            id_contrato += text[contador]
+            contador += 1
+
+        return id_contrato
+
+
+
     def create(self, text: str) -> None:
         text = unidecode(text)
         # Pedir mais samples desse pq aparentemente o preco/imposto mudou dia 10 de janeiro, no meio do periodo de faturacao entao o documento normal pode ser diferente
 
         self.id_documento = self._get_data(text, 'EDPC801-', '\r\n')
-        self.id_contribuinte = ''  # self._get_data(text, 'Potência', '6,9 kVA (simples))
-        self.id_cliente = ''  # self._get_data(text, '(Código Ponto Entrega)', 'PT')
-        self.id_contrato = self._get_data(text, 'odigo de contrato Potencia\r\n', ' ')
+        self.id_contribuinte = ''
+        self.id_cliente = ''
+        self.id_contrato = self._get_id_contrato(text)
 
         self.periodo_referencia = self._conv_periodo_faturacao(self._get_data(text, 'Periodo de faturacao:', '\r\n'))
-               
-        
-        
+
         self.str_emissao = self._get_data(text, 'Documento emitido a:', '\r\n')
         self.str_valor = self._get_data(text, 'a pagar?\r\n', '\r\n')
         self.str_vencimento = self._get_data(text, 'conta a partir de:\r\n', '\r\n')
+        if (self.str_vencimento == ''):
+            self.str_vencimento = self._get_data(text, 'posso\r\npagar?\r\n', '\r\n')
 
         # Ajusta as datas
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)

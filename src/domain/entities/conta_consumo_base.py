@@ -1,5 +1,4 @@
 from datetime import datetime, date
-from abc import abstractmethod
 from dataclasses import dataclass
 import re
 
@@ -32,9 +31,8 @@ class ContaConsumoBase:
     file_name = ''
     id_alojamento = ''
     diretorio_google = ''
-    nome_arquivo_google = ''
     str_erro = ''
-    
+
     dt_inicio_referencia: Optional[date] = None
     dt_fim_referencia: Optional[date] = None
     dt_vencimento: Optional[date] = None
@@ -146,15 +144,29 @@ class ContaConsumoBase:
     def is_ok(self)->bool:
         if (self.str_vencimento.strip() == ''):
             return False
-        
+
         if (self.id_cliente == '') and (self.id_contrato == '') and (self.local_consumo == ''):
             return False
-        
+
         if (self.dt_vencimento is None) or (self.valor is None) or (self.dt_emissao is None):
             return False
-        
-        return True
-       
-        
 
-            
+        return True
+
+    @property
+    def nome_arquivo_google(self) -> str:
+        if self.is_ok() is False:
+            return ''
+
+        if self.id_alojamento == '':
+            return ''
+
+        _name_list = ['', 'EDP', 'Galp', 'Aguas', 'Aguas', 'EPAL', 'Altice(MEO)', 'NOS', 'Vodafone']
+        _dt_vencimento = self.dt_vencimento.strftime("%Y.%m.%d")
+        _concessionaria = _name_list[self.concessionaria]
+        _vet = self.id_alojamento.split('_')
+        _alojamento = self.id_alojamento
+        if (len(_vet) > 1):
+            _alojamento = f'{_vet[0]}_{_vet[1]}'
+
+        return f'{_dt_vencimento} {_concessionaria} - {_alojamento}.pdf'
