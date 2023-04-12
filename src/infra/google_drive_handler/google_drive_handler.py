@@ -25,7 +25,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         self._drive = discovery.build('drive', 'v3', http=http)
 
     def get_excel_file(self, file_id: str):
-        request = self._drive.files().get_media(fileId=file_id)
+        request = self.get_service().files().get_media(fileId=file_id)
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         done = False
@@ -35,7 +35,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         return fh.getvalue()
 
     def get_google_sheets_file(self, file_id: str):
-        request = self._drive.files().export_media(fileId=file_id,
+        request = self.get_service().files().export_media(fileId=file_id,
                                         mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
@@ -46,17 +46,17 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         return fh.getvalue()
 
     def upload_file(self, local_file_name: str,  file_name: str, parents=[]):
-        file_metadata = {
-            'name': file_name,
-            'mimeType': 'application/pdf',
-        }
-        if (len(parents) > 0):
+        file_metadata = {'name': file_name, 'mimeType': 'application/pdf'}
+        if len(parents) > 0:
             file_metadata["parents"] = parents
 
-        media = MediaFileUpload(local_file_name,
-                                mimetype='*/*',
-                                resumable=True)
-        return self._drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        media = MediaFileUpload(local_file_name, mimetype='*/*', resumable=True)
+        return self.get_service().files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+
+    def update_file(self, file_id, new_filename: str):
+        file = self.get_service().files().get(fileId=file_id).execute()
+        media_body = MediaFileUpload(new_filename, mimetype=file['mimeType'], resumable=False)
+        return self.get_service().files().update(fileId=file_id, media_body=media_body, fields='id, webViewLink').execute()
 
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
         q = f" name = '{name}' "
@@ -66,7 +66,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         page_token = None
         while True:
             # pylint: disable=maybe-no-member
-            response = self._drive.files().list(q=q,
+            response = self.get_service().files().list(q=q,
                                             spaces='drive',
                                             fields='nextPageToken, '
                                                    'files(id, name, mimeType)',
@@ -88,7 +88,10 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         if (parent_id):
             file_metadata["parents"] = [parent_id]
 
-        return self._drive.files().create(body=file_metadata, fields='id, name, parents').execute()
+        return self.get_service().files().create(body=file_metadata, fields='id, name, parents').execute()
+
+    def get_service(self):
+        return self._drive
 
 
 #drive = GoogleDriveHandler('./credentials')

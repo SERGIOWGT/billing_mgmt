@@ -85,9 +85,9 @@ class App:
         alojamentos = self._get_alojamentos()
         ok_list, not_found_list, error_list, ignored_list = FilesHandler.execute(self._log, str(download_folder), alojamentos)
 
-        #uploader = ResultsUploader(self._log, self._drive)
-        #folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
-        #uploader.execute(folder_base_id, ok_list)
+        uploader = ResultsUploader(self._log, self._drive)
+        folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
+        uploader.execute(folder_base_id, ok_list)
 
         saver = ResultsSaver(self._log, self._drive)
         export_folder = str(self._app_config.get('directories.exports'))

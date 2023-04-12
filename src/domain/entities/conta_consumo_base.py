@@ -32,6 +32,7 @@ class ContaConsumoBase:
     id_alojamento = ''
     diretorio_google = ''
     str_erro = ''
+    link_google = ''
 
     dt_inicio_referencia: Optional[date] = None
     dt_fim_referencia: Optional[date] = None

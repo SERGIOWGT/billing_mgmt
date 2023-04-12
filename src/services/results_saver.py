@@ -18,7 +18,7 @@ class ResultsSaver:
 
     def _create_df_ok(self, list: List[ContaConsumoBase]) -> Any:
         columns = ['Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo Google', 'Arquivo Original']
+                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo Google', 'Link Google', 'Arquivo Original']
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
@@ -40,6 +40,7 @@ class ResultsSaver:
             _dict['Valor'] = line.str_valor
             _dict['Diretorio Google'] = line.diretorio_google
             _dict['Arquivo Google'] = line.nome_arquivo_google
+            _dict['Link Google'] = line.link_google
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])

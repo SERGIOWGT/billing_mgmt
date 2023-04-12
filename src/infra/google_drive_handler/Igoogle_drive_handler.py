@@ -16,6 +16,10 @@ class IGoogleDriveHandler(ABC):
         ...
 
     @abstractmethod
+    def update_file(self, file_id, new_filename: str):
+        ...
+
+    @abstractmethod
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
         ...
 
