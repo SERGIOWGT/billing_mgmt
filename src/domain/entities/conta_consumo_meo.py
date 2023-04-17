@@ -7,7 +7,7 @@ class ContaConsumoMEO(ContaConsumoBase):
     def __init__(self):
         super().__init__(self)
         self.concessionaria = ConcessionariaEnum.ALTICE_MEO
-        self.tipo_servico = TipoServicoEnum.INTERNET
+        self.tipo_servico = TipoServicoEnum.TELECOM
 
     def create(self, text: str) -> None:
         text = unidecode(text)

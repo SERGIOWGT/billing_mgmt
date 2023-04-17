@@ -17,11 +17,12 @@ class ResultsSaver:
         self._drive = drive
 
     def _create_df_ok(self, list: List[ContaConsumoBase]) -> Any:
-        columns = ['Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+        columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo Google', 'Link Google', 'Arquivo Original']
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
+            _dict['QQ Destino'] = 'Sim' if line.is_qualquer_destino else 'Não'
             _dict['Alojamento'] = line.id_alojamento
             _dict['Ano Emissao'] = str(line.dt_emissao.year)
             _dict['Mes Emissao'] = format(line.dt_emissao.month, '02d')
@@ -47,13 +48,14 @@ class ResultsSaver:
         return df
 
     def _create_df_sem_alojamento(self, list: List[ContaConsumoBase]) -> Any:
-        columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+        columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                  'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 
-                 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Original']
+                 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Link Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
+            _dict['QQ Destino'] = 'Sim' if line.is_qualquer_destino else 'Não'
             _dict['Concessionaria'] = ConcessionariaEnum(line.concessionaria).name
             _dict['Tipo Servico'] = TipoServicoEnum(line.tipo_servico).name
             _dict['N. Contrato'] = line.id_contrato
@@ -67,19 +69,21 @@ class ResultsSaver:
             _dict['Emissao'] = line.str_emissao
             _dict['Vencimento'] = line.str_vencimento
             _dict['Valor'] = line.str_valor
+            _dict['Link Google'] = line.link_google
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
     def _create_df_error(self, list: List[ContaConsumoBase]) -> Any:
-        columns = ['Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+        columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Erro', 'Arquivo Original']
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Erro', 'Link Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
+            _dict['QQ Destino'] = 'Sim' if line.is_qualquer_destino else 'Não'
             _dict['Concessionaria'] = ConcessionariaEnum(line.concessionaria).name
             _dict['Tipo Servico'] = TipoServicoEnum(line.tipo_servico).name
             _dict['N. Contrato'] = line.id_contrato
@@ -94,17 +98,21 @@ class ResultsSaver:
             _dict['Vencimento'] = line.str_vencimento
             _dict['Valor'] = line.str_valor
             _dict['Erro'] = line.str_erro
+            _dict['Link Google'] = line.link_google
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
     def _create_df_ignored(self, list) -> Any:
-        columns = ['Erro', 'Arquivo']
+        columns = ['Erro', 'Link Google', 'Arquivo']
         df = pd.DataFrame(columns=columns)
         for line in list:
-            df = df.append({'Erro': line['msg'], 'Arquivo': line['file_name']}, ignore_index=True)
-
+            _dict = {}
+            _dict['Erro'] =  line['msg']
+            _dict['Link Google'] =line['Link Google']
+            _dict['Arquivo'] =line['file_name']
+            df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
     def execute (self, export_folder: str, new_ok_list: List[ContaConsumoBase], not_found_list: List[ContaConsumoBase], error_list: List[ContaConsumoBase], ignored_list: List[Any]):

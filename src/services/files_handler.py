@@ -24,9 +24,15 @@ class FilesHandler:
                 conta_consumo.file_name = complete_file_name
                 try:
                     conta_consumo.create(all_text)
+                    str_all_text = str(all_text.upper())
+                    conta_consumo.is_qualquer_destino = False
+                    if "DESTINO" in str_all_text:
+                        if "QQ DESTINO" in str_all_text or "QUALQUER DESTINO" in str_all_text:
+                            conta_consumo.is_qualquer_destino = True
+                        elif "515593354" in str_all_text:
+                            conta_consumo.is_qualquer_destino = True
                     if conta_consumo.is_ok():
                         alojamento = alojamentos.get_alojamento(conta_consumo.concessionaria, conta_consumo.id_cliente.strip(), conta_consumo.id_contrato.strip(), conta_consumo.local_consumo.strip())
-
                         if (alojamento):
                             conta_consumo.id_alojamento = alojamento.nome
                             conta_consumo.diretorio_google = alojamento.diretorio
@@ -35,12 +41,11 @@ class FilesHandler:
                             not_found_list.append(conta_consumo)
                     else:
                         error_list.append(conta_consumo)
-
                 except Exception:
                     error_list.append(conta_consumo)
             else:
                 msg = f'Arquivo não reconhecido ou fora do formato {complete_file_name}'
                 log.info(msg)
-                ignored_list.append({'file_name': complete_file_name, 'msg': msg})
+                ignored_list.append({'file_name': complete_file_name, 'msg': msg, 'Link Google': ''})
 
         return processed_list, not_found_list, error_list, ignored_list

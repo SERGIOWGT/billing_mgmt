@@ -1,6 +1,7 @@
 import io
 import os
 from dataclasses import dataclass
+from typing import List
 import pandas as pd
 from src.services.results_saver import ResultsSaver
 
@@ -35,6 +36,22 @@ class App:
         self._app_config = app_config
         self._drive = drive
 
+    def _get_senders(self) -> List[str]:
+        stream_file = self._drive.get_excel_file(self._app_config.get('google drive.file_accommodation_id'))
+        df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name='Senders')
+        df = df_.where(pd.notnull(df_), None)
+
+        senders = []
+        for _, row in df.iterrows():
+            if (len(row) < 2):
+                raise Exception('Planilha com os senders tem menos que 2 colunas.')
+
+            email = row[0]
+            if (row[1].upper() == "SIM"):
+                senders.append(email)
+
+        return senders
+
     def _get_alojamentos(self) -> PoolAlojamentos:
         stream_file = self._drive.get_excel_file(self._app_config.get('google drive.file_accommodation_id'))
         df_ = pd.read_excel(io.BytesIO(stream_file))
@@ -55,6 +72,8 @@ class App:
                 cliente = '' if (str(cliente) == 'None') else str(cliente).replace(' ', '')
                 conta = '' if (str(conta) == 'None') else str(conta).replace(' ', '')
                 local = '' if (str(local) == 'None') else str(local).replace(' ', '')
+                nome = nome.replace(' ', '')
+                diretorio = diretorio.replace(' ', '')
 
                 if cliente or conta or local:
                     alojamentos.append(Alojamento(empresa, nome, diretorio, cliente, conta, local))
@@ -74,11 +93,14 @@ class App:
         return email
 
     def _download_emails(self, email) -> None:
-        path_to_save = self._app_config.get('directories.downloads')
+        path_to_save = str(self._app_config.get('directories.downloads'))
         ApplicationException.when(not os.path.exists(str(path_to_save)), f'Path does not exist. [{path_to_save}]', self._log)
-        input_email_folder = self._app_config.get('email.input_folder')
-        output_email_folder = self._app_config.get('email.output_folder')
-        AttachmentDownloader.execute(path_to_save, input_email_folder, output_email_folder, self._log, email)
+
+        senders = self._get_senders()
+
+        input_email_folder = str(self._app_config.get('email.input_folder'))
+        output_email_folder = str(self._app_config.get('email.output_folder'))
+        AttachmentDownloader.execute(path_to_save, input_email_folder, output_email_folder, senders, self._log, email)
 
     def _process_downloaded_files(self) -> None:
         download_folder = self._app_config.get('directories.downloads')
@@ -87,7 +109,11 @@ class App:
 
         uploader = ResultsUploader(self._log, self._drive)
         folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
-        uploader.execute(folder_base_id, ok_list)
+        folder_contabil_id = str(self._app_config.get('google drive.folder_accounting_id'))
+        uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
+
+        folder_base_id = str(self._app_config.get('google drive.folder_other_downloads_id'))
+        uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
 
         saver = ResultsSaver(self._log, self._drive)
         export_folder = str(self._app_config.get('directories.exports'))

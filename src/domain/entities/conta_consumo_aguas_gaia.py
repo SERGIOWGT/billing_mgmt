@@ -24,7 +24,7 @@ class ContaConsumoAguasDeGaia(ContaConsumoBase):
         self.str_vencimento = self._get_data(text, 'Debito a partir de\r\n', '\r\n')
         if (self.str_vencimento == ''):
             self.str_vencimento = self._get_data(text, 'Data limite pagamento\r\n', '\r\n')
-            
+
         self.str_emissao = self._get_data(text, 'Data de Emissao\r\n', '\r\n')
 
         self.periodo_referencia = self._get_data(text, 'Periodo Faturacao:', '\r\n')

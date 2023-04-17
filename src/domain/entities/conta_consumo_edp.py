@@ -7,7 +7,7 @@ class ContaConsumoEDP(ContaConsumoBase):
     def __init__(self):
         super().__init__(self)
         self.concessionaria = ConcessionariaEnum.EDP
-        self.tipo_servico = TipoServicoEnum.INTERNET
+        self.tipo_servico = TipoServicoEnum.TELECOM
 
     def _conv_periodo_faturacao(self, value: str):
         ret = ''

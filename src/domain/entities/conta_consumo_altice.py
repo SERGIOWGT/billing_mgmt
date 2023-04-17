@@ -7,10 +7,9 @@ class ContaConsumoAltice(ContaConsumoBase):
     def __init__(self):
         super().__init__(self)
         self.concessionaria = ConcessionariaEnum.ALTICE_MEO
-        self.tipo_servico = TipoServicoEnum.INTERNET
+        self.tipo_servico = TipoServicoEnum.TELECOM
 
     def create(self, text: str) -> None:
-        text_old = text
         text = unidecode(text)
         text = text.replace('|', ' ')
 
@@ -22,15 +21,13 @@ class ContaConsumoAltice(ContaConsumoBase):
         self.str_vencimento = self._get_data(text, 'Debito bancario a partir de:', '\r\n')
         if (self.str_vencimento == ''):
             self.str_vencimento = self._get_data(text, f'Fatura\r\n{self.periodo_referencia}', 'EUR')
-            
-            
+
         self.periodo_referencia = self.periodo_referencia.replace(' ', '/')
 
         self.id_contribuinte = self._get_data(text, 'No Contribuinte:', '\r\n')
         self.id_cliente = self._get_data(text, 'No Cliente:', '\r\n')
         self.id_contrato = self._get_data(text, 'No Conta:', '\r\n')
-        
-        
+
         self.str_valor = self._get_data(text, 'Valor a Pagar', '\r\n')
 
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)

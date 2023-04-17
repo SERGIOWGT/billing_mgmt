@@ -39,6 +39,7 @@ class ContaConsumoBase:
     dt_vencimento: Optional[date] = None
     dt_emissao: Optional[date] = None
     valor: Optional[float] = None
+    is_qualquer_destino: Optional[bool] = None
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
