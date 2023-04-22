@@ -1,10 +1,10 @@
-from datetime import datetime, date
-from dataclasses import dataclass
 import re
-
+from dataclasses import dataclass
+from datetime import date, datetime
 from typing import Optional
-from src.domain.enums.tipo_servico_enum import TipoServicoEnum
-from src.domain.enums.concessionaria_enum import ConcessionariaEnum
+
+from src.domain.enums import (ConcessionariaEnum, TipoDocumentoEnum,
+                              TipoServicoEnum)
 
 
 @dataclass
@@ -14,13 +14,13 @@ class ContaConsumoBase:
                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
                    'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12}
 
-    concessionaria: ConcessionariaEnum = ConcessionariaEnum.AGUAS_DE_GAIA
-    tipo_servico: TipoServicoEnum = TipoServicoEnum.AGUA
+    concessionaria: ConcessionariaEnum = ConcessionariaEnum.DESCONHECIDO
+    tipo_servico: TipoServicoEnum = TipoServicoEnum.DESCONHECIDO
+    tipo_documento: TipoDocumentoEnum = TipoDocumentoEnum.DESCONHECIDO
     id_documento = ''
     id_contribuinte = ''
     id_cliente = ''
     id_contrato = ''
-    nome_cliente = ''
     periodo_referencia = ''
     local_consumo = ''
     str_emissao = ''
@@ -39,7 +39,7 @@ class ContaConsumoBase:
     dt_vencimento: Optional[date] = None
     dt_emissao: Optional[date] = None
     valor: Optional[float] = None
-    is_qualquer_destino: Optional[bool] = None
+    _is_qualquer_destino: Optional[bool] = None
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -155,6 +155,18 @@ class ContaConsumoBase:
 
         return True
 
+    def _check_account_of_qqd(self, text: str) -> None:
+        self._is_qualquer_destino = False
+        if "DESTINO" in text:
+            if "QQ DESTINO" in text or "QUALQUER DESTINO" in text:
+                self._is_qualquer_destino = True
+            elif "515593354" in text:
+                self._is_qualquer_destino = True
+
+    @property
+    def is_qualquer_destino(self)->bool:
+        return self._is_qualquer_destino
+
     @property
     def nome_arquivo_google(self) -> str:
         if self.is_ok() is False:
@@ -172,3 +184,4 @@ class ContaConsumoBase:
             _alojamento = f'{_vet[0]}_{_vet[1]}'
 
         return f'{_dt_vencimento} {_concessionaria} - {_alojamento}.pdf'
+

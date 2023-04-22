@@ -10,12 +10,12 @@
         "file_name": "logs/log.txt"
     },
     "directories": {
-        "downloads": "C:/repositorio.dev/billing_mgmt/downloads",
-        "exports": "C:/repositorio.dev/billing_mgmt/exports",
-        "config": "C:/repositorio.dev/billing_mgmt/config",
-        "_downloads": "/Users/sergio/work/Luiza/billing_mgmt/downloads",
-        "_exports": "/Users/sergio/work/Luiza/billing_mgmt/exports",
-        "_config": "/Users/sergio/work/Luiza/billing_mgmt/config"
+        "downloads_": "C:/repositorio.dev/billing_mgmt/downloads",
+        "exports_": "C:/repositorio.dev/billing_mgmt/exports",
+        "config_": "C:/repositorio.dev/billing_mgmt/config",
+        "downloads": "/Users/sergio/work/Luiza/billing_mgmt/downloads",
+        "exports": "/Users/sergio/work/Luiza/billing_mgmt/exports",
+        "config": "/Users/sergio/work/Luiza/billing_mgmt/config"
     },
     "google drive": {
         "folder_client_id": "1TiOHrOJ-dH4CHe2_OMESnDd-4MQH6ybV",

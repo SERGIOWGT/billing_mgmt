@@ -1,2 +1,3 @@
 from .concessionaria_enum import ConcessionariaEnum
+from .tipo_documento_enum import TipoDocumentoEnum
 from .tipo_servico_enum import TipoServicoEnum

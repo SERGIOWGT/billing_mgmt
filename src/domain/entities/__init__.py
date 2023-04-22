@@ -1,4 +1,4 @@
-from .conta_consumo_base import ContaConsumoBase
+from .base.conta_consumo_base import ContaConsumoBase
 from .conta_consumo_nos import ContaConsumoNOS
 from .conta_consumo_edp import ContaConsumoEDP
 from .conta_consumo_vodafone import ContaConsumoVodafone

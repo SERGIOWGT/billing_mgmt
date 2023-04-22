@@ -1,6 +1,6 @@
 from unidecode import unidecode
 from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
-from .conta_consumo_base import ContaConsumoBase
+from .base.conta_consumo_base import ContaConsumoBase
 
 
 class ContaConsumoGalp(ContaConsumoBase):
@@ -25,16 +25,21 @@ class ContaConsumoGalp(ContaConsumoBase):
 
         return ret
 
-    def create(self, text: str) -> None:
-        text = unidecode(text)
-        self.id_contribuinte = 'N/A'
+    def _set_unavaible_data(self) -> None:
+        self.local_consumo = ''
+        self.id_contribuinte = ''
 
-        # OK
-        self.id_documento = self._get_data(text, 'Fatura: ', '\r\n')
+    def _search_id_data(self, text) -> bool:
         self.id_cliente = self._get_data(text, 'N.o de contribuinte\r\n', '\r\n')
         self.id_contrato = self._get_data(text, 'N.o de contrato\r\n', '\r\n')
-        self.nome_cliente = self._get_data(text, 'Nome do titular\r\n', '\r\n')
 
+    def create(self, text: str) -> None:
+        text = unidecode(text)
+
+        self._set_unavaible_data()
+        self._search_id_data(text)
+
+        self.id_documento = self._get_data(text, 'Fatura: ', '\r\n')
         self.str_valor = self._get_data(text, 'VALOR A DEBITAR:', 'EUR')
         self.str_vencimento = self._get_data(text, 'DEBITO ATE:', '\r\n')
         self.periodo_referencia = self._conv_periodo_faturacao(self._get_data(text, 'Periodo de Faturacao:', '\r\n'))
@@ -47,4 +52,5 @@ class ContaConsumoGalp(ContaConsumoBase):
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
 
+        self._check_account_of_qqd(text.upper())
         self._adjust_data()

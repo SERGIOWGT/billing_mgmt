@@ -1,6 +1,6 @@
 from unidecode import unidecode
 from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
-from .conta_consumo_base import ContaConsumoBase
+from .base.conta_consumo_base import ContaConsumoBase
 
 
 class ContaConsumoAguasDeGaia(ContaConsumoBase):
@@ -9,17 +9,22 @@ class ContaConsumoAguasDeGaia(ContaConsumoBase):
         self.concessionaria = ConcessionariaEnum.AGUAS_DE_GAIA
         self.tipo_servico = TipoServicoEnum.AGUA
 
+
+    def _search_id_data(self, text) -> bool:
+        cliente_conta = self._get_data(text, 'Cliente / Conta:', '\r\n')
+        vet = cliente_conta.strip().split('/')
+        if (len(vet) != 2):
+            return False
+        
+        self.id_cliente = vet[0]
+        self.id_contrato = cliente_conta
+        self.local_consumo = self._get_data(text, 'Local Consumo:', '\r\n')
+
     def create(self, text: str) -> None:
         text = unidecode(text)
 
-        # OK
-        cliente_conta = self._get_data(text, 'Cliente / Conta:', '\r\n')
-        vet = cliente_conta.strip().split('/')
-        if (len(vet) == 2):
-            self.id_cliente = vet[0]
-            self.id_contrato = cliente_conta
+        self._search_id_data(text)
 
-        self.local_consumo = self._get_data(text, 'Local Consumo:', '\r\n')
         self.id_contribuinte = self._get_data(text, 'NIF:', '\r\n')
         self.str_vencimento = self._get_data(text, 'Debito a partir de\r\n', '\r\n')
         if (self.str_vencimento == ''):
@@ -42,5 +47,7 @@ class ContaConsumoAguasDeGaia(ContaConsumoBase):
         # Ajusta as datas
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
+
+        self._check_account_of_qqd(text.upper())
 
         self._adjust_data()

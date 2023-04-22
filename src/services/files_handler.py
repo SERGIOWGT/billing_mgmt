@@ -1,10 +1,13 @@
 import os
 from dataclasses import dataclass
-from typing import Tuple, List
-from src.domain.entities.conta_consumo_base import ContaConsumoBase
+from typing import List, Tuple
+
+from src.domain.entities.base.conta_consumo_base import ContaConsumoBase
 from src.domain.entities.alojamentos import PoolAlojamentos
-from src.infra.pdf_extractor_handler.pdf_extractor_handler import PdfExtractorHandler
+from src.infra.pdf_extractor_handler.pdf_extractor_handler import \
+    PdfExtractorHandler
 from src.services.conta_consumo_factory import ContaConsumoFactory
+
 
 @dataclass
 class FilesHandler:
@@ -24,13 +27,6 @@ class FilesHandler:
                 conta_consumo.file_name = complete_file_name
                 try:
                     conta_consumo.create(all_text)
-                    str_all_text = str(all_text.upper())
-                    conta_consumo.is_qualquer_destino = False
-                    if "DESTINO" in str_all_text:
-                        if "QQ DESTINO" in str_all_text or "QUALQUER DESTINO" in str_all_text:
-                            conta_consumo.is_qualquer_destino = True
-                        elif "515593354" in str_all_text:
-                            conta_consumo.is_qualquer_destino = True
                     if conta_consumo.is_ok():
                         alojamento = alojamentos.get_alojamento(conta_consumo.concessionaria, conta_consumo.id_cliente.strip(), conta_consumo.id_contrato.strip(), conta_consumo.local_consumo.strip())
                         if (alojamento):
@@ -41,6 +37,7 @@ class FilesHandler:
                             not_found_list.append(conta_consumo)
                     else:
                         error_list.append(conta_consumo)
+
                 except Exception:
                     error_list.append(conta_consumo)
             else:

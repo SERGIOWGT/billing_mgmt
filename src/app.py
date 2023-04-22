@@ -64,7 +64,7 @@ class App:
 
             nome = row[2]
             diretorio = row[3]
-            for empresa in [x for x in list(ConcessionariaEnum) if x != ConcessionariaEnum.NADA]:
+            for empresa in [x for x in list(ConcessionariaEnum) if x != ConcessionariaEnum.DESCONHECIDO]:
                 cliente = row[1 + (3 * empresa)]
                 conta = row[2 + (3 * empresa)]
                 local = row[3 + (3 * empresa)]
@@ -110,7 +110,7 @@ class App:
         uploader = ResultsUploader(self._log, self._drive)
         folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
         folder_contabil_id = str(self._app_config.get('google drive.folder_accounting_id'))
-        uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
+        #uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
 
         folder_base_id = str(self._app_config.get('google drive.folder_other_downloads_id'))
         uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)

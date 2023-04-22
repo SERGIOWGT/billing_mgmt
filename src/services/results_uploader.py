@@ -1,10 +1,11 @@
-from dataclasses import dataclass
 import time
-import datetime
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, List
-from src.domain.entities.conta_consumo_base import ContaConsumoBase
-from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
+
+from src.domain.entities.base.conta_consumo_base import ContaConsumoBase
+from src.infra.google_drive_handler.Igoogle_drive_handler import \
+    IGoogleDriveHandler
 
 @dataclass
 class ResultsUploader:

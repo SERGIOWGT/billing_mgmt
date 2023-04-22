@@ -1,7 +1,7 @@
 from enum import IntEnum
 
 class ConcessionariaEnum(IntEnum):
-    NADA = 0
+    DESCONHECIDO = 0
     EDP = 1
     GALP = 2
     AGUAS_DE_PORTO = 3
