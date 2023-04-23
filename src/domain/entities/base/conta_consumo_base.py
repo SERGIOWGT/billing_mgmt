@@ -1,4 +1,5 @@
 import re
+import calendar
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
@@ -126,10 +127,26 @@ class ContaConsumoBase:
         self.local_consumo = _clear_data(self.local_consumo)
         self.str_valor = _clear_value(self.str_valor)
 
+        self.periodo_referencia = self.periodo_referencia.strip()
+        self.periodo_referencia = self.periodo_referencia.replace('-', '/')
+
+        self.periodo_referencia.split('~')
         vet = self.periodo_referencia.split('~')
         if (len(vet) == 2):
             self.str_inicio_referencia = self._convert_2_default_date(vet[0].strip(), 'YMD', full_month=False)
             self.str_fim_referencia = self._convert_2_default_date(vet[1].strip(), 'YMD', full_month=False)
+        else:
+            vet = self.periodo_referencia.split('/')
+            if (len(vet) == 2):
+                mes = self.mes_extenso.get(vet[0].lower(), '')
+                if mes:
+                    self.periodo_referencia = f'{vet[1]}/{mes}'
+                    self.str_inicio_referencia = self.periodo_referencia + '/1'
+                    last_day = calendar.monthrange(int(vet[1]), mes)[1]
+                    self.str_fim_referencia = self.periodo_referencia + '/' + str(last_day)
+                else:
+                    self.periodo_referencia = f'{vet[1]}/{vet[0]}'
+                    
 
         self.dt_vencimento = _str_2_date(self.str_vencimento)
         self.dt_emissao = _str_2_date(self.str_emissao)
@@ -140,6 +157,8 @@ class ContaConsumoBase:
         if (self.str_valor):
             try:
                self.valor = float(self.str_valor.replace(',', '.'))
+               if self.tipo_documento == TipoDocumentoEnum.NOTA_CREDITO:
+                   self.valor=self.valor * -1
             except Exception:
                 self.valor = None
 

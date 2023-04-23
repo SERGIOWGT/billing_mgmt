@@ -113,7 +113,7 @@ class App:
         #uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
 
         folder_base_id = str(self._app_config.get('google drive.folder_other_downloads_id'))
-        uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
+        #uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
 
         saver = ResultsSaver(self._log, self._drive)
         export_folder = str(self._app_config.get('directories.exports'))

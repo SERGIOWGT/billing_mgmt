@@ -19,7 +19,7 @@ class ContaConsumoEDP(ContaConsumoBase):
             vet_datas = ret.split('~')
             if (len(vet_datas) == 2):
                 vet_data_aberta = vet_datas[0].split('.')
-                if (len(vet_data_aberta)==2):
+                if (len(vet_data_aberta) == 2):
                     vet_data_aberta = vet_datas[1].split('.')
                     vet_datas[0] += '.'+vet_data_aberta[2]
 
@@ -54,31 +54,32 @@ class ContaConsumoEDP(ContaConsumoBase):
 
         return id_contrato
 
-
     def _set_unavaible_data(self) -> None:
         self.id_contribuinte = ''
         self.id_cliente = ''
         self.local_consumo = ''
 
+    def _get_data_vencimento(self, text) -> None:
+        self.str_vencimento = self._get_data(text, 'conta a partir de:\r\n', '\r\n')
+        if (self.str_vencimento == ''):
+            self.str_vencimento = self._get_data(text, 'posso\r\npagar?\r\n', '\r\n')
+
     def create(self, text: str) -> None:
         text = unidecode(text)
 
         self._set_unavaible_data()
+        self._get_data_vencimento(text)
+        self._check_account_of_qqd(text.upper())
 
         self.id_contrato = self._get_id_contrato(text)
-
         self.id_documento = self._get_data(text, 'EDPC801-', '\r\n')
         self.periodo_referencia = self._conv_periodo_faturacao(self._get_data(text, 'Periodo de faturacao:', '\r\n'))
         self.str_emissao = self._get_data(text, 'Documento emitido a:', '\r\n')
         self.str_valor = self._get_data(text, 'a pagar?\r\n', '\r\n')
-        self.str_vencimento = self._get_data(text, 'conta a partir de:\r\n', '\r\n')
-        if (self.str_vencimento == ''):
-            self.str_vencimento = self._get_data(text, 'posso\r\npagar?\r\n', '\r\n')
 
         # Ajusta as datas
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
 
-        self._check_account_of_qqd(text.upper())
         self._adjust_data()
     

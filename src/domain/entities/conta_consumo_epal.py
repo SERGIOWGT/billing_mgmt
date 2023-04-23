@@ -28,8 +28,8 @@ class ContaConsumoEpal(ContaConsumoBase):
 
         self._set_unavaible_data()
         self._search_id_data(text)
+        self._check_account_of_qqd(text.upper())
 
-        # OK
         self.id_documento = self._get_data(text, 'FATURA no FT ', ', emitida em ')
         self.periodo_referencia = self._get_data(text, 'Periodo de Faturacao de', '\r\n')
         self.periodo_referencia = self.periodo_referencia.replace(' a ', '~')
@@ -45,6 +45,4 @@ class ContaConsumoEpal(ContaConsumoBase):
         # Ajusta as datas
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'YMD')
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'YMD')
-
-        self._check_account_of_qqd(text.upper())
         self._adjust_data()
