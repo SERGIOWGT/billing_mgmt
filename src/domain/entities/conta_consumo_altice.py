@@ -14,12 +14,13 @@ class ContaConsumoAltice(ContaConsumoBase):
     def _set_unavaible_data(self) -> None:
         self.local_consumo = ''
 
-    def _search_id_data(self, text) -> bool:
+    def _search_id_data(self, text) -> None:
         self.id_cliente = self._get_data(text, 'No Cliente:', '\r\n')
         self.id_contrato = self._get_data(text, 'No Conta:', '\r\n')
 
     def _get_periodo_faturacao(self, text) -> None:
-        x = re.search('Fatura\r\n\w+ [0-9]{4}', text)
+        regex = 'Fatura\r\n({}) [0-9]{{4}}'.format(self.regex_months)
+        x = re.search(regex, text)
         if x:
             pos_ini = x.regs[0][0] + 8
             pos_fim = x.regs[0][1]
@@ -29,7 +30,18 @@ class ContaConsumoAltice(ContaConsumoBase):
     def _get_data_vencimento(self, text) -> None:
         self.str_vencimento = self._get_data(text, 'Debito bancario a partir de:', '\r\n')
         if (self.str_vencimento == ''):
-            self.str_vencimento = self._get_data(text, f'Fatura\r\n{self.periodo_referencia}', 'EUR')
+            regex = 'Fatura\r\n({}) [0-9]{{4}} [0-9]{{1,2}} ({}) [0-9]{{4}}'.format(self.regex_months, self.regex_months)
+            x = re.search(regex, text)
+            if x:
+                pos_ini = x.regs[0][0]
+                pos_fim = x.regs[0][1]
+                str_aux = text[pos_ini:pos_fim]
+                vet = str_aux.split(' ')
+                if (len(vet) == 5):
+                    self.str_vencimento = f'{vet[2]} {vet[3]} {vet[4]}'
+
+        #Fatura\r\nfevereiro 2023 8 marco 2023
+
 
     def create(self, text: str) -> None:
         text = unidecode(text)
@@ -40,7 +52,7 @@ class ContaConsumoAltice(ContaConsumoBase):
         self._get_periodo_faturacao(text)
         self._get_data_vencimento(text)
         self._check_account_of_qqd(text.upper())
-        
+
         self.id_documento = self._get_data(text, 'No Referencia:', '\r\n')
         self.str_emissao = self._get_data(text, 'Data de Emissao:', '\r\n')
         self.id_contribuinte = self._get_data(text, 'No Contribuinte:', '\r\n')
@@ -49,12 +61,7 @@ class ContaConsumoAltice(ContaConsumoBase):
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
         self._adjust_data()
-        
         if (self.str_vencimento == ''):
             if (self.valor == 0) and (self.str_emissao != ''):
                 self.tipo_documento = TipoDocumentoEnum.FATURA_ZERADA
                 self.str_erro = 'Fatura Zerada'
-
-
-
-# Detalhe da Fatura No A785124244 fevereiro 2023\r\n

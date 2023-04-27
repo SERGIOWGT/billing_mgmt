@@ -33,7 +33,7 @@ class ContaConsumoGalp(ContaConsumoBase):
     def _search_id_data(self, text) -> bool:
         self.id_cliente = self._get_data(text, 'N.o de contribuinte\r\n', '\r\n')
         self.id_contrato = self._get_data(text, 'N.o de contrato\r\n', '\r\n')
-        
+
     def _get_periodo_faturacao(self, text, str_search):
         str1 = 'Periodo de Faturacao: '
         str_search = str1 + str_search
@@ -53,9 +53,11 @@ class ContaConsumoGalp(ContaConsumoBase):
 
         self.id_documento = self._get_data(text, 'Fatura: ', '\r\n')
 
-        self._get_periodo_faturacao(text, '[0-9]{2} [A-Z]{3} [0-9]{4} a [0-9]{2} [A-Z]{3} [0-9]{4}\r\n')
+        regex = '[0-9]{{2}} ({}) [0-9]{{4}} a [0-9]{{2}} ({}) [0-9]{{4}}\r\n'.format(self.regex_months_reduced.upper(), self.regex_months_reduced.upper())
+        self._get_periodo_faturacao(text, regex)
         if (self.periodo_referencia.strip() == ''):
-            self._get_periodo_faturacao(text, '[0-9]{2} [A-Z]{3} [0-9]{4} a [0-9]{2} [A-Z]{3} \r\n[0-9]{4}\r\n')
+            regex = '[0-9]{{2}} ({}) [0-9]{{4}} a [0-9]{{2}} ({}) \r\n[0-9]{{4}}\r\n'.format(self.regex_months_reduced.upper(), self.regex_months_reduced.upper())
+            self._get_periodo_faturacao(text, regex)
 
         self.str_valor = self._get_data(text, 'VALOR A DEBITAR:', 'EUR')
         self.str_vencimento = self._get_data(text, 'DEBITO ATE:', '\r\n')

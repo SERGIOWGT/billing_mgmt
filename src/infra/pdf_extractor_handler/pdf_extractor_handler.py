@@ -36,7 +36,7 @@ class PdfExtractorHandler (IPdfExtractorHandler):
     def get_text(file_name: str) -> str:
         doc = pdfium.PdfDocument(file_name, None)
         page_count = len(doc)  # get page counts
-        
+
         all_text = ''
         pdf = pdfium.PdfDocument(file_name)
         for index in range(page_count):

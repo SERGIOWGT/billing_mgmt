@@ -1,6 +1,8 @@
 import os
+import shutil
 from dataclasses import dataclass
 from typing import List, Tuple
+from src.domain.entities.contas_pagas import PoolContasPagas
 from src.domain.enums.tipo_documento_enum import TipoDocumentoEnum
 
 from src.domain.entities.base.conta_consumo_base import ContaConsumoBase
@@ -13,7 +15,30 @@ from src.services.conta_consumo_factory import ContaConsumoFactory
 @dataclass
 class FilesHandler:
     @staticmethod
-    def execute(log, download_folder: str, alojamentos: PoolAlojamentos) -> Tuple[List[ContaConsumoBase], List[ContaConsumoBase], List[ContaConsumoBase], List[dict]]:
+    def move_files(log, download_folder: str, ok_list: List[ContaConsumoBase],  sem_alojamentos: List[ContaConsumoBase],  error_list: List[ContaConsumoBase], ignored_list: List[dict]) -> None:
+
+        final_folder = os.path.join(download_folder, 'ignorados')
+        for conta in ignored_list:
+            new_file_name = os.path.join(final_folder, os.path.basename(conta['file_name']))
+            shutil.move(conta['file_name'], new_file_name)
+
+        final_folder = os.path.join(download_folder, 'processados')
+        for conta in ok_list:
+            new_file_name = os.path.join(final_folder, os.path.basename(conta.file_name))
+            shutil.move(conta.file_name, new_file_name)
+
+        final_folder = os.path.join(download_folder, 'sem_alojamentos')
+        for conta in sem_alojamentos:
+            new_file_name = os.path.join(final_folder, os.path.basename(conta.file_name))
+            shutil.move(conta.file_name, new_file_name)
+
+        final_folder = os.path.join(download_folder, 'erros')
+        for conta in error_list:
+            new_file_name = os.path.join(final_folder, os.path.basename(conta.file_name))
+            shutil.move(conta.file_name, new_file_name)
+
+    @staticmethod
+    def execute(log, download_folder: str, alojamentos: PoolAlojamentos, contas_pagas: PoolContasPagas) -> Tuple[List[ContaConsumoBase], List[ContaConsumoBase], List[ContaConsumoBase], List[dict]]:
         processed_list = []
         not_found_list = []
         error_list = []
@@ -37,7 +62,13 @@ class FilesHandler:
                         if (alojamento):
                             conta_consumo.id_alojamento = alojamento.nome
                             conta_consumo.diretorio_google = alojamento.diretorio
-                            processed_list.append(conta_consumo)
+
+                            ja_foi_paga = contas_pagas.exists(conta_consumo.concessionaria, conta_consumo.tipo_servico, alojamento.nome, conta_consumo.id_documento)
+                            if (ja_foi_paga):
+                                conta_consumo.str_erro = 'Conta já foi processada'
+                                error_list.append(conta_consumo)
+                            else:
+                                processed_list.append(conta_consumo)
                         else:
                             not_found_list.append(conta_consumo)
                     else:

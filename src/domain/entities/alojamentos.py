@@ -9,6 +9,7 @@ class Alojamento:
     concessionaria: ConcessionariaEnum
     nome: str = ''
     diretorio: str = ''
+    nif: str = ''
     cliente: str = ''
     conta: str = ''
     local: str = ''
@@ -45,4 +46,3 @@ class PoolAlojamentos:
                 return x
 
         return None
-

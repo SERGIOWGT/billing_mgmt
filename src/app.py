@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import List
 import pandas as pd
+from src.domain.entities.contas_pagas import ContaPaga, PoolContasPagas
 from src.services.results_saver import ResultsSaver
 
 from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
@@ -21,6 +22,8 @@ from src.infra.exception_handler import ApplicationException
 @dataclass
 class App:
 
+
+
     def __init__(self, app_config: IAppConfigurationReader, drive: IGoogleDriveHandler, log):
         self.downloads_folder = app_config.get('directories.downloads')
         ApplicationException.when(not os.path.exists(self.downloads_folder), f'Path does not exist. [{self.downloads_folder}]', log)
@@ -35,6 +38,24 @@ class App:
         self._log = log
         self._app_config = app_config
         self._drive = drive
+
+    def _get_contas_pagas(self)->PoolContasPagas:
+        df = pd.read_excel('C:\\repositorio.dev\\billing_mgmt\\database\\database.xlsx', dtype={'N. Documento / N. Fatura': object})
+        contas = []
+        for _, row in df.iterrows():
+            nome_concessionaria=row['Concessionaria']
+            nome_concessionaria = nome_concessionaria.replace('\n', '')
+            nome_tipo_servico=row['Tipo Servico']
+            nome_tipo_servico = nome_tipo_servico.replace('\n', '')
+            nome_alojamento=row['Alojamento']
+            id_documento=row['N. Documento / N. Fatura']
+            dt_emissao=row['Emissao']
+            contas.append(ContaPaga(nome_concessionaria, nome_tipo_servico, nome_alojamento, id_documento, dt_emissao))
+
+        return PoolContasPagas(contas)
+
+    #def _exist_bills()->bool:
+        #return df.loc[(df['col1'] == valor1) & (df['col2'] == valor2)]
 
     def _get_senders(self) -> List[str]:
         stream_file = self._drive.get_excel_file(self._app_config.get('google drive.file_accommodation_id'))
@@ -64,19 +85,20 @@ class App:
 
             nome = row[2]
             diretorio = row[3]
+            nif = row[4]
             for empresa in [x for x in list(ConcessionariaEnum) if x != ConcessionariaEnum.DESCONHECIDO]:
-                cliente = row[1 + (3 * empresa)]
-                conta = row[2 + (3 * empresa)]
-                local = row[3 + (3 * empresa)]
+                cliente = row[2 + (3 * empresa)]
+                conta = row[3 + (3 * empresa)]
+                local = row[4 + (3 * empresa)]
 
                 cliente = '' if (str(cliente) == 'None') else str(cliente).replace(' ', '')
                 conta = '' if (str(conta) == 'None') else str(conta).replace(' ', '')
                 local = '' if (str(local) == 'None') else str(local).replace(' ', '')
-                nome = nome.replace(' ', '')
-                diretorio = diretorio.replace(' ', '')
+                nome = '' if (str(nome) == 'None') else str(nome).replace(' ', '')
+                diretorio = '' if (str(diretorio) == 'None') else str(diretorio).replace(' ', '')
 
                 if cliente or conta or local:
-                    alojamentos.append(Alojamento(empresa, nome, diretorio, cliente, conta, local))
+                    alojamentos.append(Alojamento(empresa, nome, diretorio, nif, cliente, conta, local))
 
         return PoolAlojamentos(alojamentos)
 
@@ -105,7 +127,8 @@ class App:
     def _process_downloaded_files(self) -> None:
         download_folder = self._app_config.get('directories.downloads')
         alojamentos = self._get_alojamentos()
-        ok_list, not_found_list, error_list, ignored_list = FilesHandler.execute(self._log, str(download_folder), alojamentos)
+        contas_processadas = self._get_contas_pagas()
+        ok_list, not_found_list, error_list, ignored_list = FilesHandler.execute(self._log, str(download_folder), alojamentos, contas_processadas)
 
         uploader = ResultsUploader(self._log, self._drive)
         folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
@@ -117,7 +140,10 @@ class App:
 
         saver = ResultsSaver(self._log, self._drive)
         export_folder = str(self._app_config.get('directories.exports'))
-        saver.execute(export_folder, ok_list, not_found_list, error_list, ignored_list)
+        database_folder = str(self._app_config.get('directories.database'))
+        saver.execute(database_folder, export_folder, ok_list, not_found_list, error_list, ignored_list, contas_processadas.count+1)
+
+        #FilesHandler.move_files(self._log, str(download_folder), ok_list, not_found_list, error_list, ignored_list)
 
     def execute(self):
         email = self._get_and_connect_email()

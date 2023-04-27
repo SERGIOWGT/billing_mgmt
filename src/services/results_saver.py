@@ -119,7 +119,7 @@ class ResultsSaver:
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute (self, export_folder: str, new_ok_list: List[ContaConsumoBase], not_found_list: List[ContaConsumoBase], error_list: List[ContaConsumoBase], ignored_list: List[Any]):
+    def execute (self, database_folder: str, export_folder: str, new_ok_list: List[ContaConsumoBase], not_found_list: List[ContaConsumoBase], error_list: List[ContaConsumoBase], ignored_list: List[Any], count_contas_pagas: int):
         new_ok_list.sort(key=lambda x: x.concessionaria)
         not_found_list.sort(key=lambda x: x.concessionaria)
         error_list.sort(key=lambda x: x.concessionaria)
@@ -137,3 +137,8 @@ class ResultsSaver:
             df_nf.to_excel(writer, sheet_name='Sem Alojamentos', index=False)
             df_error.to_excel(writer, sheet_name='Erros', index=False)
             df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
+
+        output_file_name = 'database.xlsx'
+        output_file_name = os.path.join(database_folder, output_file_name)
+        with pd.ExcelWriter(output_file_name, mode='a', if_sheet_exists='overlay') as writer:
+            df_ok.to_excel(writer, sheet_name='Database', index=False, startrow=count_contas_pagas)
