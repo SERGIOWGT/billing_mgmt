@@ -140,5 +140,6 @@ class ResultsSaver:
 
         output_file_name = 'database.xlsx'
         output_file_name = os.path.join(database_folder, output_file_name)
-        with pd.ExcelWriter(output_file_name, mode='a', if_sheet_exists='overlay') as writer:
+        with pd.ExcelWriter(output_file_name) as writer:
+        #with pd.ExcelWriter(output_file_name, mode='a', if_sheet_exists='overlay') as writer:
             df_ok.to_excel(writer, sheet_name='Database', index=False, startrow=count_contas_pagas)

@@ -40,8 +40,12 @@ class App:
         self._drive = drive
 
     def _get_contas_pagas(self)->PoolContasPagas:
-        df = pd.read_excel('C:\\repositorio.dev\\billing_mgmt\\database\\database.xlsx', dtype={'N. Documento / N. Fatura': object})
+        file_name = 'C:\\repositorio.dev\\billing_mgmt\\database\\database.xlsx'
+        if os.path.exists(file_name) is False:
+            return PoolContasPagas([])
+
         contas = []
+        df = pd.read_excel(file_name, dtype={'N. Documento / N. Fatura': object})
         for _, row in df.iterrows():
             nome_concessionaria=row['Concessionaria']
             nome_concessionaria = nome_concessionaria.replace('\n', '')
@@ -133,10 +137,10 @@ class App:
         uploader = ResultsUploader(self._log, self._drive)
         folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
         folder_contabil_id = str(self._app_config.get('google drive.folder_accounting_id'))
-        #uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
+        uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
 
         folder_base_id = str(self._app_config.get('google drive.folder_other_downloads_id'))
-        #uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
+        uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
 
         saver = ResultsSaver(self._log, self._drive)
         export_folder = str(self._app_config.get('directories.exports'))

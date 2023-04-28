@@ -166,14 +166,22 @@ class ContaConsumoBase:
                 self.valor = None
 
     def is_ok(self)->bool:
-        if (self.str_vencimento.strip() == ''):
-            return False
+        if self.tipo_documento == TipoDocumentoEnum.FATURA_ZERADA:
+            if (self.id_cliente == '') and (self.id_contrato == '') and (self.local_consumo == ''):
+                return False
+            
+            if (self.valor is None) or (self.dt_emissao is None):
+                return False
+            
+        else:
+            if (self.str_vencimento.strip() == ''):
+                return False
 
-        if (self.id_cliente == '') and (self.id_contrato == '') and (self.local_consumo == ''):
-            return False
+            if (self.id_cliente == '') and (self.id_contrato == '') and (self.local_consumo == ''):
+                return False
 
-        if (self.dt_vencimento is None) or (self.valor is None) or (self.dt_emissao is None):
-            return False
+            if (self.dt_vencimento is None) or (self.valor is None) or (self.dt_emissao is None):
+                return False
 
         return True
 
@@ -206,4 +214,3 @@ class ContaConsumoBase:
             _alojamento = f'{_vet[0]}_{_vet[1]}'
 
         return f'{_dt_vencimento} {_concessionaria} - {_alojamento}.pdf'
-
