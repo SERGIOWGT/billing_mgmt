@@ -15,27 +15,11 @@ from src.services.conta_consumo_factory import ContaConsumoFactory
 @dataclass
 class FilesHandler:
     @staticmethod
-    def move_files(log, download_folder: str, ok_list: List[ContaConsumoBase],  sem_alojamentos: List[ContaConsumoBase],  error_list: List[ContaConsumoBase], ignored_list: List[dict]) -> None:
+    def move_files(log, destination_folder: str, file_list: List[str]) -> None:
+        for file_name in file_list:
+            new_file_name = os.path.join(destination_folder, os.path.basename(file_name))
+            shutil.move(file_name, new_file_name)
 
-        final_folder = os.path.join(download_folder, 'ignorados')
-        for conta in ignored_list:
-            new_file_name = os.path.join(final_folder, os.path.basename(conta['file_name']))
-            shutil.move(conta['file_name'], new_file_name)
-
-        final_folder = os.path.join(download_folder, 'processados')
-        for conta in ok_list:
-            new_file_name = os.path.join(final_folder, os.path.basename(conta.file_name))
-            shutil.move(conta.file_name, new_file_name)
-
-        final_folder = os.path.join(download_folder, 'sem_alojamentos')
-        for conta in sem_alojamentos:
-            new_file_name = os.path.join(final_folder, os.path.basename(conta.file_name))
-            shutil.move(conta.file_name, new_file_name)
-
-        final_folder = os.path.join(download_folder, 'erros')
-        for conta in error_list:
-            new_file_name = os.path.join(final_folder, os.path.basename(conta.file_name))
-            shutil.move(conta.file_name, new_file_name)
 
     @staticmethod
     def execute(log, download_folder: str, alojamentos: PoolAlojamentos, contas_pagas: PoolContasPagas) -> Tuple[List[ContaConsumoBase], List[ContaConsumoBase], List[ContaConsumoBase], List[dict]]:

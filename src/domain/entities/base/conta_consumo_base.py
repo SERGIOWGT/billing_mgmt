@@ -99,8 +99,8 @@ class ContaConsumoBase:
         if (format == 'YMD'):
             str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
         elif (format == 'DMY'):
-           str_date = f'{vet[2]}/{vet[1]}/{vet[0]}'
-#            str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
+            str_date = f'{vet[2]}/{vet[1]}/{vet[0]}'
+
 
         if not self._is_date(str_date):
             return ''

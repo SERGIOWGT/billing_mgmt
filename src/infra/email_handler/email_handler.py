@@ -1,4 +1,5 @@
 import base64
+import datetime
 import email
 from dataclasses import dataclass
 
@@ -8,6 +9,7 @@ import os
 import quopri
 import re
 from typing import List
+import uuid
 
 from .Imail_handler import IEmailHandler
 from src.infra.exception_handler import ApplicationException
@@ -98,18 +100,23 @@ class EmailHandler(IEmailHandler):
     def get_save_attachments(self, message_uid: int, download_folder: str):
         list_file = []
         email_message = self.fetch_email(message_uid)
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S").replace('-', '_')
 
         for part in email_message.walk():
             if part.get_content_maintype() == 'multipart':
                 continue
             if part.get('Content-Disposition') is None:
                 continue
-            att_file_name = part.get_filename()
-            if (att_file_name):
-                att_file_name = self.encoded_file_name_2_text(att_file_name)
-                att_file_name = re.sub("[:\\/\s]", "_", att_file_name)
-            else:
-                att_file_name = 'unkown_file_name'
+
+            guid = uuid.uuid4()
+            att_file_name = f"{timestamp}_{guid}.pdf"
+            #att_file_name = part.get_filename()
+            #if (att_file_name):
+            #    att_file_name = self.encoded_file_name_2_text(att_file_name)
+            #    att_file_name = re.sub("[:\\/\s]", "_", att_file_name)
+            #else:
+            #    att_file_name = 'unkown_file_name'
 
             if bool(att_file_name):
                 download_path = f"{download_folder}/{att_file_name}"

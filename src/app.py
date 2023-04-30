@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import List
 import pandas as pd
+from src.domain.entities.base.conta_consumo_base import ContaConsumoBase
 from src.domain.entities.contas_pagas import ContaPaga, PoolContasPagas
 from src.services.results_saver import ResultsSaver
 
@@ -72,8 +73,8 @@ class App:
                 raise Exception('Planilha com os senders tem menos que 2 colunas.')
 
             email = row[0]
-            if (row[1].upper() == "SIM"):
-                senders.append(email)
+            #if row[1] and (row[1].upper() == "SIM"):
+            senders.append(email)
 
         return senders
 
@@ -128,29 +129,40 @@ class App:
         output_email_folder = str(self._app_config.get('email.output_folder'))
         AttachmentDownloader.execute(path_to_save, input_email_folder, output_email_folder, senders, self._log, email)
 
+    def _clean_directories(self, download_folder, ok_list: List[ContaConsumoBase], ignored_list: List[dict]):
+        destination_folder = os.path.join(download_folder, 'processados')
+        list_2_move = [conta.file_name for conta in ok_list]
+        FilesHandler.move_files(self._log, destination_folder, list_2_move)
+
+        destination_folder = os.path.join(download_folder, 'ignorados')
+        list_2_move = [conta['file_name'] for conta in ignored_list]
+        FilesHandler.move_files(self._log, destination_folder, list_2_move)
+
     def _process_downloaded_files(self) -> None:
-        download_folder = self._app_config.get('directories.downloads')
         alojamentos = self._get_alojamentos()
         contas_processadas = self._get_contas_pagas()
-        ok_list, not_found_list, error_list, ignored_list = FilesHandler.execute(self._log, str(download_folder), alojamentos, contas_processadas)
+
+        download_folder = str(self._app_config.get('directories.downloads'))
+        ok_list, not_found_list, error_list, ignored_list = FilesHandler.execute(self._log, download_folder, alojamentos, contas_processadas)
 
         uploader = ResultsUploader(self._log, self._drive)
         folder_base_id = str(self._app_config.get('google drive.folder_client_id'))
         folder_contabil_id = str(self._app_config.get('google drive.folder_accounting_id'))
-        uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
+        #uploader.upload_ok_list(folder_base_id, folder_contabil_id, ok_list)
 
         folder_base_id = str(self._app_config.get('google drive.folder_other_downloads_id'))
-        uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
+        #uploader.upload_other_list(folder_base_id, not_found_list, error_list, ignored_list)
 
         saver = ResultsSaver(self._log, self._drive)
         export_folder = str(self._app_config.get('directories.exports'))
         database_folder = str(self._app_config.get('directories.database'))
         saver.execute(database_folder, export_folder, ok_list, not_found_list, error_list, ignored_list, contas_processadas.count+1)
 
-        #FilesHandler.move_files(self._log, str(download_folder), ok_list, not_found_list, error_list, ignored_list)
+        #self._clean_directories(download_folder, ok_list, ignored_list)
+
 
     def execute(self):
         email = self._get_and_connect_email()
-        self._download_emails(email)
+        #self._download_emails(email)
         self._process_downloaded_files()
         email.logout()
