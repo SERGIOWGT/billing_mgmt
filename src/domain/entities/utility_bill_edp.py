@@ -1,13 +1,13 @@
 from unidecode import unidecode
-from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
-from .base.conta_consumo_base import ContaConsumoBase
+from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
+from .base.base_utility_bill import UtilityBillBase
 
 
-class ContaConsumoEDP(ContaConsumoBase):
+class UtilityBillEDP(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.EDP
-        self.tipo_servico = TipoServicoEnum.TELECOM
+        self.concessionaria = ServiceProviderEnum.EDP
+        self.tipo_servico = ServiceTypeEnum.TELECOM
 
     def _conv_periodo_faturacao(self, value: str):
         ret = ''

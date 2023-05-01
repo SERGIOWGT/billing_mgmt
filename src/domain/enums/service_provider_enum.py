@@ -1,6 +1,7 @@
 from enum import IntEnum
 
-class ConcessionariaEnum(IntEnum):
+
+class ServiceProviderEnum(IntEnum):
     DESCONHECIDO = 0
     EDP = 1
     GALP = 2

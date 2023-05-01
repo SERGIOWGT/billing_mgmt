@@ -2,45 +2,19 @@
 from datetime import date, datetime
 from unidecode import unidecode
 
-from src.domain.enums import (ConcessionariaEnum, TipoDocumentoEnum,
-                              TipoServicoEnum)
+from src.domain.enums import (ServiceProviderEnum, DocumentTypeEnum,
+                              ServiceTypeEnum)
 
-from .base.conta_consumo_base import ContaConsumoBase
+from .base.base_utility_bill import UtilityBillBase
 
-class ContaConsumoVodafone(ContaConsumoBase):
+
+class UtilityBillVodafone(UtilityBillBase):
     def __init__(self):
         super().__init__()
-        self.concessionaria = ConcessionariaEnum.VODAFONE
-        self.tipo_servico = TipoServicoEnum.TELECOM
+        self.concessionaria = ServiceProviderEnum.VODAFONE
+        self.tipo_servico = ServiceTypeEnum.TELECOM
 
-    def _str_2_date(self, value: str) -> date:
-        _dt_retorno = None
-        if (value):
-            try:
-                _dt_retorno = datetime.strptime(value, '%Y/%m/%d')
-            except Exception:
-                _dt_retorno = None
-        return _dt_retorno
-
-    def _get_local_consumo(self, text) -> None:
-        self.local_consumo = ''
-        
-    def _get_id_contribuinte(self, text) -> None:
-        informacoes_cliente = self._get_data(text, 'No Documento No Contribuinte No de Conta', 'Apoio a').split()
-        self.id_contribuinte = informacoes_cliente[2] if len(informacoes_cliente) == 4 else ''
-
-    def _get_id_cliente(self, text) -> None:
-        self.id_cliente = ''
-
-    def _get_id_contrato(self, text) -> None:
-        informacoes_cliente = self._get_data(text, 'No Documento No Contribuinte No de Conta', 'Apoio a').split()
-        self.id_contrato = informacoes_cliente[3] if len(informacoes_cliente) == 4 else ''
-
-    def _get_periodo_faturacao(self, text) -> None:
-        self.periodo_referencia = self._get_data(text, 'Periodo de faturacao:', '\r\n')
-        if (self.periodo_referencia == ''):
-            return
-
+    def _ajusta_periodo_fatoracao(self):
         dt_aux = self._str_2_date(self.str_emissao)
         if dt_aux is None:
             return
@@ -62,6 +36,38 @@ class ContaConsumoVodafone(ContaConsumoBase):
         else:
             self.periodo_referencia = f'{ano_emissao}/{vet[1]}/{vet[0]} ~ {ano_emissao}/{vet[3]}/{vet[2]}'
 
+    def _str_2_date(self, value: str) -> date:
+        _dt_retorno = None
+        if (value):
+            try:
+                _dt_retorno = datetime.strptime(value, '%Y/%m/%d')
+            except Exception:
+                _dt_retorno = None
+        return _dt_retorno
+
+    def _adjust_data(self) -> None:
+        self._ajusta_periodo_fatoracao()
+        super()._adjust_data()
+
+    def _get_local_consumo(self, text) -> None:
+        self.local_consumo = ''
+
+    def _get_id_contribuinte(self, text) -> None:
+        informacoes_cliente = self._get_data(text, 'No Documento No Contribuinte No de Conta', 'Apoio a').split()
+        self.id_contribuinte = informacoes_cliente[2] if len(informacoes_cliente) == 4 else ''
+
+    def _get_id_cliente(self, text) -> None:
+        self.id_cliente = ''
+
+    def _get_id_contrato(self, text) -> None:
+        informacoes_cliente = self._get_data(text, 'No Documento No Contribuinte No de Conta', 'Apoio a').split()
+        self.id_contrato = informacoes_cliente[3] if len(informacoes_cliente) == 4 else ''
+
+    def _get_periodo_faturacao(self, text) -> None:
+        self.periodo_referencia = self._get_data(text, 'Periodo de faturacao:', '\r\n')
+        if (self.periodo_referencia == ''):
+            return
+
     def _get_id_documento(self, text: str) -> None:
         informacoes_cliente = self._get_data(text, 'No Documento No Contribuinte No de Conta', 'Apoio a').split()
         self.id_documento = informacoes_cliente[1] if len(informacoes_cliente) == 4 else ''
@@ -82,7 +88,7 @@ class ContaConsumoVodafone(ContaConsumoBase):
 
     def create(self, text: str) -> None:
         text = unidecode(text)
-        
+
         self._get_periodo_faturacao(text)
         self._get_local_consumo(text)
         self._get_id_cliente(text)
@@ -94,8 +100,7 @@ class ContaConsumoVodafone(ContaConsumoBase):
         self._check_account_of_qqd(text.upper())
         self._adjust_data()
 
-        #if self._search_id_data(text) is False:
-        #    if ('Detalhe da fatura de' in text):
-        #        self.tipo_documento = TipoDocumentoEnum.DETALHE_FATURA
-        #        self.str_erro = 'Detalhe da Fatura VodaFone'
-        #        return
+        if self.id_contribuinte == '' and self.id_contrato == '' and self.id_documento == '':
+            if 'Detalhe da fatura de' in text:
+                self.tipo_documento = DocumentTypeEnum.DETALHE_FATURA
+                self.str_erro = 'Detalhe da Fatura VodaFone'

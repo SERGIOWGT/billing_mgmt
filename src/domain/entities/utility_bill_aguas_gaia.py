@@ -1,16 +1,16 @@
 from unidecode import unidecode
 
-from src.domain.enums import (ConcessionariaEnum, TipoDocumentoEnum,
-                              TipoServicoEnum)
+from src.domain.enums import (ServiceProviderEnum, DocumentTypeEnum,
+                              ServiceTypeEnum)
 
-from .base.conta_consumo_base import ContaConsumoBase
+from .base.base_utility_bill import UtilityBillBase
 
 
-class ContaConsumoAguasDeGaia(ContaConsumoBase):
+class UtilityBillAguasDeGaia(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.AGUAS_DE_GAIA
-        self.tipo_servico = TipoServicoEnum.AGUA
+        self.concessionaria = ServiceProviderEnum.AGUAS_DE_GAIA
+        self.tipo_servico = ServiceTypeEnum.AGUA
 
     def _get_local_consumo(self, text) -> None:
         self.local_consumo = self._get_data(text, 'Local Consumo:', '\r\n')
@@ -74,8 +74,13 @@ class ContaConsumoAguasDeGaia(ContaConsumoBase):
             self.id_documento = self._get_data(text, 'Nota de Credito: ', 'Data Fatura')
             self.str_valor = self._get_data(text, 'Valor a Receber\r\n', '\r\n')
             if (self.id_documento) and (self.str_valor):
-                self.tipo_documento = TipoDocumentoEnum.NOTA_CREDITO
-                self.str_erro = 'Nota de crédito'
-
-
+                self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
+        
         self._adjust_data()
+        if (self.tipo_documento != DocumentTypeEnum.NOTA_CREDITO):
+            start_pos = text.find(f'-{self.str_valor}')
+            if (start_pos > 0):
+                if (self.id_documento) and (self.str_valor):
+                    self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
+                    self.valor = self.valor * (-1)
+

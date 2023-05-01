@@ -1,17 +1,17 @@
 import re
 from unidecode import unidecode
 
-from src.domain.entities.base.conta_consumo_base import ContaConsumoBase
-from src.domain.enums import (ConcessionariaEnum, TipoDocumentoEnum,
-                              TipoServicoEnum)
+from src.domain.entities.base.base_utility_bill import UtilityBillBase
+from src.domain.enums import (ServiceProviderEnum, DocumentTypeEnum,
+                              ServiceTypeEnum)
 
 
-class ContaConsumoNOS(ContaConsumoBase):
+class UtilityBillNOS(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.NOS
-        self.tipo_servico = TipoServicoEnum.TELECOM
-        
+        self.concessionaria = ServiceProviderEnum.NOS
+        self.tipo_servico = ServiceTypeEnum.TELECOM
+
     def _get_local_consumo(self, text) -> None:
         self.local_consumo = ''
 
@@ -27,7 +27,7 @@ class ContaConsumoNOS(ContaConsumoBase):
     def _get_periodo_faturacao(self, text):
         self.periodo_referencia = self._get_data(text, 'Periodo de faturacao\r\n', '\r\n')
         self.periodo_referencia = self.periodo_referencia.replace(' de ', '/')
-        
+
     def _get_id_documento(self, text: str) -> None:
         self.id_documento = self._get_data(text, 'Fatura n.o\r\n', '\r\n')
 
@@ -61,7 +61,6 @@ class ContaConsumoNOS(ContaConsumoBase):
             self.str_valor = re.sub(r'[^0-9,]', '', self.str_valor) if self.str_valor else ''
 
             if (self.str_valor == '0,00'):
-                self.tipo_documento = TipoDocumentoEnum.FATURA_ZERADA
-                self.str_erro = 'Fatura Zerada'
+                self.tipo_documento = DocumentTypeEnum.FATURA_ZERADA
 
         self._adjust_data()

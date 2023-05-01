@@ -1,6 +1,7 @@
 from enum import IntEnum
 
-class TipoServicoEnum(IntEnum):
+
+class ServiceTypeEnum(IntEnum):
     DESCONHECIDO = 0
     AGUA = 1
     LUZ = 2

@@ -1,14 +1,14 @@
 import re
 from unidecode import unidecode
-from src.domain.enums import ConcessionariaEnum, TipoServicoEnum
-from .base.conta_consumo_base import ContaConsumoBase
+from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
+from .base.base_utility_bill import UtilityBillBase
 
 
-class ContaConsumoMEO(ContaConsumoBase):
+class UtilityBillMEO(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.ALTICE_MEO
-        self.tipo_servico = TipoServicoEnum.TELECOM
+        self.concessionaria = ServiceProviderEnum.ALTICE_MEO
+        self.tipo_servico = ServiceTypeEnum.TELECOM
 
     def _get_local_consumo(self, text) -> None:
         self.local_consumo = ''
@@ -43,7 +43,7 @@ class ContaConsumoMEO(ContaConsumoBase):
     def _get_data_emissao(self, text) -> None:
         self.str_emissao = self._get_data(text, 'Data de Emissao:', '\r\n')
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
-        
+
     def create(self, text: str) -> None:
         text = unidecode(text)
         text = text.replace('†', ' ').replace('∫', 'o.')

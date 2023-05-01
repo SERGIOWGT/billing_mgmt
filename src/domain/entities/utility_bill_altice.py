@@ -1,15 +1,16 @@
 import re
 from unidecode import unidecode
-from src.domain.enums import (ConcessionariaEnum, TipoDocumentoEnum,
-                              TipoServicoEnum)
+from src.domain.enums import (ServiceProviderEnum, DocumentTypeEnum,
+                              ServiceTypeEnum)
 
-from .base.conta_consumo_base import ContaConsumoBase
+from .base.base_utility_bill import UtilityBillBase
 
-class ContaConsumoAltice(ContaConsumoBase):
+
+class UtilityBillAltice(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.ALTICE_MEO
-        self.tipo_servico = TipoServicoEnum.TELECOM
+        self.concessionaria = ServiceProviderEnum.ALTICE_MEO
+        self.tipo_servico = ServiceTypeEnum.TELECOM
 
     def _get_local_consumo(self, text) -> None:
         self.local_consumo = ''
@@ -74,5 +75,4 @@ class ContaConsumoAltice(ContaConsumoBase):
 
         if (self.str_vencimento == ''):
             if (self.valor == 0) and (self.str_emissao != ''):
-                self.tipo_documento = TipoDocumentoEnum.FATURA_ZERADA
-                self.str_erro = 'Fatura Zerada'
+                self.tipo_documento = DocumentTypeEnum.FATURA_ZERADA

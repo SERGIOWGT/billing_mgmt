@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
-from src.domain.enums import (ConcessionariaEnum, TipoDocumentoEnum,
-                              TipoServicoEnum)
+from src.domain.enums import (ServiceProviderEnum, DocumentTypeEnum,
+                              ServiceTypeEnum)
 
 
 @dataclass
-class ContaConsumoBase:
+class UtilityBillBase:
     mes_extenso = {'janeiro': 1, 'fevereiro': 2, 'marco': 3, 'abril': 4, 'maio': 5, 'junho': 6,
                    'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12,
                    'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
@@ -18,9 +18,9 @@ class ContaConsumoBase:
     regex_months = 'janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro'
     regex_months_reduced = 'jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez'
 
-    concessionaria: ConcessionariaEnum = ConcessionariaEnum.DESCONHECIDO
-    tipo_servico: TipoServicoEnum = TipoServicoEnum.DESCONHECIDO
-    tipo_documento: TipoDocumentoEnum = TipoDocumentoEnum.DESCONHECIDO
+    concessionaria: ServiceProviderEnum = ServiceProviderEnum.DESCONHECIDO
+    tipo_servico: ServiceTypeEnum = ServiceTypeEnum.DESCONHECIDO
+    tipo_documento: DocumentTypeEnum = DocumentTypeEnum.CONTA_CONSUMO
     id_documento = ''
     id_contribuinte = ''
     id_cliente = ''
@@ -66,6 +66,9 @@ class ContaConsumoBase:
         ret = text[start_pos:end_pos]
         ret = ret.replace('\r', '').replace('\n', '')
 
+        if ret:
+            ret = ret.strip()
+
         return ret
 
     @staticmethod
@@ -100,7 +103,6 @@ class ContaConsumoBase:
             str_date = f'{vet[0]}/{vet[1]}/{vet[2]}'
         elif (format == 'DMY'):
             str_date = f'{vet[2]}/{vet[1]}/{vet[0]}'
-
 
         if not self._is_date(str_date):
             return ''
@@ -149,7 +151,6 @@ class ContaConsumoBase:
                     self.str_fim_referencia = self.periodo_referencia + '/' + str(last_day)
                 else:
                     self.periodo_referencia = f'{vet[1]}/{vet[0]}'
-                    
 
         self.dt_vencimento = _str_2_date(self.str_vencimento)
         self.dt_emissao = _str_2_date(self.str_emissao)
@@ -159,20 +160,20 @@ class ContaConsumoBase:
 
         if (self.str_valor):
             try:
-               self.valor = float(self.str_valor.replace(',', '.'))
-               if self.tipo_documento == TipoDocumentoEnum.NOTA_CREDITO:
-                   self.valor=self.valor * -1
+                self.valor = float(self.str_valor.replace(',', '.'))
+                if self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO:
+                    self.valor = self.valor * -1
             except Exception:
                 self.valor = None
 
-    def is_ok(self)->bool:
-        if self.tipo_documento == TipoDocumentoEnum.FATURA_ZERADA:
+    def is_ok(self) -> bool:
+        if self.tipo_documento == DocumentTypeEnum.FATURA_ZERADA or self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO:
             if (self.id_cliente == '') and (self.id_contrato == '') and (self.local_consumo == ''):
                 return False
-            
+
             if (self.valor is None) or (self.dt_emissao is None):
                 return False
-            
+
         else:
             if (self.str_vencimento.strip() == ''):
                 return False
@@ -194,7 +195,7 @@ class ContaConsumoBase:
                 self._is_qualquer_destino = True
 
     @property
-    def is_qualquer_destino(self)->bool:
+    def is_qualquer_destino(self) -> bool:
         return self._is_qualquer_destino
 
     @property
@@ -206,11 +207,18 @@ class ContaConsumoBase:
             return ''
 
         _name_list = ['', 'EDP', 'Galp', 'Aguas', 'Aguas', 'EPAL', 'Altice(MEO)', 'NOS', 'Vodafone']
-        _dt_vencimento = self.dt_vencimento.strftime("%Y.%m.%d")
         _concessionaria = _name_list[self.concessionaria]
         _vet = self.id_alojamento.split('_')
         _alojamento = self.id_alojamento
         if (len(_vet) > 1):
             _alojamento = f'{_vet[0]}_{_vet[1]}'
 
-        return f'{_dt_vencimento} {_concessionaria} - {_alojamento}.pdf'
+        if (self.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO):
+            part_name = self.dt_vencimento.strftime("%Y.%m.%d")
+        else: 
+            part_name = self.dt_emissao.strftime("%Y.%m.%d")
+            if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
+                part_name += 'NC'
+            elif (self.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):
+                part_name += 'FZ'
+        return f'{part_name} {_concessionaria} - {_alojamento}.pdf'

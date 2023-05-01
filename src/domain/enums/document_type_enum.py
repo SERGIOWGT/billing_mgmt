@@ -1,6 +1,7 @@
 from enum import IntEnum
 
-class TipoDocumentoEnum(IntEnum):
+
+class DocumentTypeEnum(IntEnum):
     DESCONHECIDO = 0
     CONTA_CONSUMO = 1
     NOTA_CREDITO = 2

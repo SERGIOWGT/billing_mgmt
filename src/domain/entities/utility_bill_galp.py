@@ -1,14 +1,14 @@
 import re
 from unidecode import unidecode
-from src.domain.enums import ConcessionariaEnum, TipoServicoEnum, TipoDocumentoEnum
-from .base.conta_consumo_base import ContaConsumoBase
+from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum, DocumentTypeEnum
+from .base.base_utility_bill import UtilityBillBase
 
 
-class ContaConsumoGalp(ContaConsumoBase):
+class UtilityBillGalp(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
-        self.concessionaria = ConcessionariaEnum.GALP
-        self.tipo_servico = TipoServicoEnum.AGUA
+        self.concessionaria = ServiceProviderEnum.GALP
+        self.tipo_servico = ServiceTypeEnum.AGUA
 
     def _adjust_periodo_faturacao(self):
         ret = ''
@@ -21,7 +21,7 @@ class ContaConsumoGalp(ContaConsumoBase):
             if (len(vet) == 2):
                 vet[0] = self._convert_2_default_date(vet[0], 'DMY', True)
                 vet[1] = self._convert_2_default_date(vet[1], 'DMY', True)
-                if vet[0] != '' and vet[1] != '' :
+                if vet[0] != '' and vet[1] != '':
                     ret = f'{vet[0]} ~ {vet[1]}'
 
         self.periodo_referencia = ret
@@ -52,7 +52,7 @@ class ContaConsumoGalp(ContaConsumoBase):
             return ''
 
         regex = r'\d{{2}} ({}) \d{{4}} a \d{{2}} ({}) \d{{4}}\r\n'.format(self.regex_months_reduced.upper(), self.regex_months_reduced.upper())
-        self.periodo_referencia  = get(text, regex)
+        self.periodo_referencia = get(text, regex)
         if (self.periodo_referencia.strip() == ''):
             regex = '\d{{2}} ({}) \d{{4}} a \d{{2}} ({}) \r\n\d{{4}}\r\n'.format(self.regex_months_reduced.upper(), self.regex_months_reduced.upper())
             self.periodo_referencia = get(text, regex)
@@ -72,7 +72,7 @@ class ContaConsumoGalp(ContaConsumoBase):
         regex = f'{str_padrao}NC \d+/\d+'
         self.id_documento = __get(str_padrao, regex, text)
         if (self.id_documento):
-            self.tipo_documento = TipoDocumentoEnum.NOTA_CREDITO
+            self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
             self.id_documento = self.id_documento.strip()
             return
 
@@ -80,19 +80,19 @@ class ContaConsumoGalp(ContaConsumoBase):
         regex = f'{str_padrao}FT \d+/\d+'
         self.id_documento = __get(str_padrao, regex, text)
         if (self.id_documento):
-            self.tipo_documento = TipoDocumentoEnum.CONTA_CONSUMO
+            self.tipo_documento = DocumentTypeEnum.CONTA_CONSUMO
             self.id_documento = self.id_documento.strip()
             return
 
     def _get_data_vencimento(self, text) -> None:
-        if (self.tipo_documento == TipoDocumentoEnum.NOTA_CREDITO):
+        if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
             self.str_vencimento = ''
         else:
             self.str_vencimento = self._get_data(text, 'DEBITO ATE:', '\r\n')
             self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
 
     def _get_valor(self, text) -> None:
-        if (self.tipo_documento == TipoDocumentoEnum.NOTA_CREDITO):
+        if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
             self.str_valor = self._get_data(text, 'Tem a receber\r\n', 'EUR')
         else:
             self.str_valor = self._get_data(text, 'VALOR A DEBITAR:', 'EUR')

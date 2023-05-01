@@ -5,10 +5,16 @@ FN_Pilar28_RC p/ FN_Pilar22_RCB; e,
 JC_Tomas898_2DrTr p/ JC_Tomas898_2Dr0.  
 Como para estes ainda não existem faturas, imagino não causar nenhum problema. Qualquer dúvida, por favor me avise.
 Quanto aos casos para tratamentos especiais, são (por enquanto) os seguintes:
-MB_Tras156_RC: Este é um AL (localizado no Rés do Chão) de um edifício que tem mais três andares / ALs. Ao RC, estamos somando, TAMBÉM, os consumos de água e de eletricidade das áreas comuns do edifício (por nós identificada como sendo "SC" - de Serviços Comuns). Seguem anexas as faturas de água e de eletricidade referentes ao detalhamento abaixo:
+
+
+MB_Tras156_RC: Este é um AL (localizado no Rés do Chão) de um edifício que tem mais três andares / ALs. Ao RC, estamos somando, TAMBÉM, os consumos de água e de eletricidade das áreas comuns do edifício 
+(por nós identificada como sendo "SC" - de Serviços Comuns). Seguem anexas as faturas de água e de eletricidade referentes ao detalhamento abaixo:
 Água: O RC tem Local de Consumo 189077 e o RC(SC) tem o Local de Consumo 189078.
 Eletricidade: O RC tem CPE (Código de Ponto de Entrega) => PT 0002 000 133 376 944 HQ  e o RC(SC) tem CPE => PT 0002 000 133 376 933 HM.
-BD_Fernandes108_3 e BD_Fernandes108_4:  O robô já deve ter processado alguma(s) fatura(s) da MEO referente a estes ALs. Mas, certamente, só a(s) alocou a um deles. Trata-se de uma fatura única para os dois pontos de consumo. Não precisamos nada além do que pegar o valor da fatura e alocar 1/2 a cada um dos ALs.
+
+BD_Fernandes108_3 e BD_Fernandes108_4: fatura(s) da MEO referente a estes ALs. Mas, certamente, só a(s) alocou a um deles. Trata-se de uma fatura única para os dois pontos de consumo. Não precisamos nada além do que pegar o valor da fatura e alocar 1/2 a cada um dos ALs.
+
+
 RM_Vitor104_J: Aqui apenas uma "nota de esclarecimento". As faturas de eletricidade e de telecom têm a Qualquer Destino como titular (NIF da QD). Mas, por interesse pessoal da proprietária, a fatura de água permanece em nome dela (NIF diferente). Imagino que o robô já tenha processado algumas faturas deste AL.
 Até segunda-feira estarei enviando mais uma série de faturas para o "sergio.teste@gmail.com"
 No aguardo do seu feedback,
