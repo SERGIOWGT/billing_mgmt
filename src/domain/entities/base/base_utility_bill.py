@@ -210,15 +210,17 @@ class UtilityBillBase:
         _concessionaria = _name_list[self.concessionaria]
         _vet = self.id_alojamento.split('_')
         _alojamento = self.id_alojamento
-        if (len(_vet) > 1):
-            _alojamento = f'{_vet[0]}_{_vet[1]}'
+        #if (len(_vet) > 1):
+        #    _alojamento = f'{_vet[0]}_{_vet[1]}'
 
         if (self.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO):
+            print('dt_vencimento')
             part_name = self.dt_vencimento.strftime("%Y.%m.%d")
-        else: 
-            part_name = self.dt_emissao.strftime("%Y.%m.%d")
+        else:
+            print('dt_emissao',  self.dt_emissao)
+            part_name = self.dt_emissao.strftime("%Y.%m.%d") if self.dt_emissao else datetime.datetime.now().strftime("%Y.%m.%d")
             if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
                 part_name += 'NC'
             elif (self.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):
                 part_name += 'FZ'
-        return f'{part_name} {_concessionaria} - {_alojamento}.pdf'
+        return f'{part_name}_{_concessionaria}_{_alojamento}.pdf'

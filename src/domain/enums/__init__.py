@@ -1,3 +1,4 @@
 from .service_provider_enum import ServiceProviderEnum
 from .document_type_enum import DocumentTypeEnum
 from .service_type_enum import ServiceTypeEnum
+from .accommodation_status_enum import AccommodationStatusEnum

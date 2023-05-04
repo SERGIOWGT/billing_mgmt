@@ -11,7 +11,7 @@ from src.domain.entities.paid_utility_bill_list import PaidUtilityBillList
 from src.services.results_saver import ResultsSaver
 
 from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
-from src.domain.enums.service_provider_enum import ServiceProviderEnum
+from src.domain.enums import AccommodationStatusEnum, ServiceProviderEnum
 from src.domain.entities.accommodation import Accommodation
 from src.domain.entities.accommodation_list import AccommodationList
 from src.services.files_handler import FilesHandler
@@ -61,41 +61,29 @@ class App:
 
         return PaidUtilityBillList(contas)
 
-    def _get_allowed_senders(self) -> List[str]:
-        sheet_name = 'Senders'
-        stream_file = self._drive.get_excel_file(self._accommodation_file_id)
-        df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
-        df = df_.where(pd.notnull(df_), None)
-        cols = df.shape[1]
-        ApplicationException.when(cols != 2, f'A Sheet "{sheet_name}" da planilha de Alojamentoss deve ter 2 colunas. ', self._log)
-        expected_columns = ['Email', 'Habilitado']
-        actual_columns = df.columns.tolist()
-        ApplicationException.when(expected_columns != actual_columns, f'A sheet "{sheet_name}" da planilha de Alojamentoss deveria ter as colunas {actual_columns}.', self._log)
-
-        senders = []
-        for _, row in df.iterrows():
-            senders.append(row['Email'])
-
-        return senders
-
     def _get_accommodations(self) -> AccommodationList:
         def remove_space_and_dot(value: str) -> str:
             return re.sub('[.\s]+', '', value)
-            
+
         sheet_name = 'Alojamentos'
         stream_file = self._drive.get_excel_file(self._accommodation_file_id)
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
-        ApplicationException.when(cols != 19, f'A Sheet "{sheet_name}" da planilha de Alojamentos deve ter 19 colunas. ', self._log)
+        ApplicationException.when(cols != 20, f'A Sheet "{sheet_name}" da planilha de Alojamentos deve ter 20 colunas. ', self._log)
+
+        accommodation_status_list = list(AccommodationStatusEnum)
 
         Accommodations = []
         for _, row in df.iterrows():
             column_list = row.index.tolist()
-                        
+
             nome_alojamento = row['Alojamento']
             diretorio = row['Google Drive']
             nif = row['NIF Titular']
+            status = row['Status']
+            ApplicationException.when(status not in accommodation_status_list, f'O alojamento "{nome_alojamento}" da planilha de Alojamentos esta com status incompativel. [{status}]', self._log)
+
             for id_concessionaria in [x for x in list(ServiceProviderEnum) if x != ServiceProviderEnum.DESCONHECIDO]:
                 nome_concessionaria = str(id_concessionaria).replace('ServiceProviderEnum.', '')
                 nome_concessionaria = nome_concessionaria.replace(' ', '')
@@ -111,7 +99,7 @@ class App:
                 diretorio = '' if (str(diretorio) == 'None') else str(diretorio).replace(' ', '')
 
                 if cliente or conta or local:
-                    Accommodations.append(Accommodation(id_concessionaria, nome_alojamento, diretorio, nif, cliente, conta, local))
+                    Accommodations.append(Accommodation(id_concessionaria, status, nome_alojamento, diretorio, nif, cliente, conta, local))
 
         return AccommodationList(Accommodations)
 
@@ -138,10 +126,8 @@ class App:
     def _download_emails(self, email: IEmailHandler, download_folder: str) -> None:
         input_email_folder = self._get_config_key('gmail.reading.folder')
         output_email_folder = self._get_config_key('gmail.output.folder')
-        self._log.info('Baixando os remetentes permitidos na planilha de Alojamentoss')
-        senders = self._get_allowed_senders()
         self._log.info('Baixando os arquivos anexados')
-        AttachmentDownloader.execute(download_folder, input_email_folder, output_email_folder, senders, self._log, email)
+        AttachmentDownloader.execute(download_folder, input_email_folder, output_email_folder, self._log, email)
 
     def _clean_directories(self, download_folder: str, ok_list: List[UtilityBillBase], ignored_list: List[dict]):
         destination_folder = os.path.join(download_folder, 'processados')
@@ -266,5 +252,5 @@ class App:
         self._export_results(export_folder, database_folder, processed_list, not_found_list, error_list, ignored_list, processed_utility_bills)
 
         self._log.info('Limpando o diretorio de downloads')
-        self._clean_directories(download_folder, processed_list, ignored_list)
+        # self._clean_directories(download_folder, processed_list, ignored_list)
         email.logout()

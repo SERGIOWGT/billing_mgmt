@@ -55,9 +55,12 @@ class ResultsUploader:
 
             if conta_ok.is_qualquer_destino:
                 self._log.info(f'Uploading file {conta_ok.nome_arquivo_google} on accounting folder')
-                dir_name = conta_ok.dt_vencimento.strftime('%Y.%m')
-                folder_id = self._create_folder(dir_name, folder_contabil_id)
-                file = self._create_file(original_file_name=conta_ok.file_name, google_file_name=conta_ok.nome_arquivo_google, parent_id=folder_id)
+                if (conta_ok.dt_vencimento):
+                    dir_name = conta_ok.dt_vencimento.strftime('%Y.%m')
+                    folder_id = self._create_folder(dir_name, folder_contabil_id)
+                    file = self._create_file(original_file_name=conta_ok.file_name, google_file_name=conta_ok.nome_arquivo_google, parent_id=folder_id)
+                else:
+                    print('erro')
 
         return
 
