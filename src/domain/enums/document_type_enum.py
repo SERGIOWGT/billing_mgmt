@@ -7,3 +7,4 @@ class DocumentTypeEnum(IntEnum):
     NOTA_CREDITO = 2
     DETALHE_FATURA = 3
     FATURA_ZERADA = 4
+    CONTA_CONSUMO_RATEIO = 5

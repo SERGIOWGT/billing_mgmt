@@ -23,7 +23,7 @@ def get_accommodation_file_id() -> None:
     return app_config_reader.get('google_drive_accommodation_fileid')
 
 if __name__ == '__main__':
-    try:
+    #try:
         log = create_logger(__name__)
         log.info('App started')
         config_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         app = App(get_accommodation_file_id(), google_drive_handler, log)
         app.execute()
 
-    except Exception as error:
-        msg = str(error)
-        log.critical(msg)
-        print(msg)
+    #except Exception as error:
+    #    msg = str(error)
+    #    log.critical(msg)
+    #    print(msg)

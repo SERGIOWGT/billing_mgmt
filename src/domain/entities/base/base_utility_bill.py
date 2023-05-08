@@ -32,11 +32,9 @@ class UtilityBillBase:
     str_inicio_referencia = ''
     str_fim_referencia = ''
     str_valor = ''
-    file_name = ''
     id_alojamento = ''
     diretorio_google = ''
     str_erro = ''
-    link_google = ''
 
     dt_inicio_referencia: Optional[date] = None
     dt_fim_referencia: Optional[date] = None
@@ -44,6 +42,8 @@ class UtilityBillBase:
     dt_emissao: Optional[date] = None
     valor: Optional[float] = None
     _is_qualquer_destino: Optional[bool] = None
+
+    
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -210,15 +210,16 @@ class UtilityBillBase:
         _concessionaria = _name_list[self.concessionaria]
         _vet = self.id_alojamento.split('_')
         _alojamento = self.id_alojamento
-        #if (len(_vet) > 1):
-        #    _alojamento = f'{_vet[0]}_{_vet[1]}'
 
         if (self.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO):
-            print('dt_vencimento')
             part_name = self.dt_vencimento.strftime("%Y.%m.%d")
         else:
-            print('dt_emissao',  self.dt_emissao)
-            part_name = self.dt_emissao.strftime("%Y.%m.%d") if self.dt_emissao else datetime.datetime.now().strftime("%Y.%m.%d")
+            if self.dt_emissao:
+                part_name = self.dt_emissao.strftime("%Y.%m.%d")
+            else:
+                print('dt_emissao',  self.dt_emissao)
+                part_name = datetime.datetime.now().strftime("%Y.%m.%d")
+
             if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
                 part_name += 'NC'
             elif (self.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):

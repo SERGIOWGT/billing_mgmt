@@ -5,13 +5,15 @@ from dataclasses import dataclass
 import re
 from typing import List
 import pandas as pd
+
+from src.domain.entities.response_error import UtilityBillIgnoredResponse, UtilityBillDuplicatedResponse, UtilityBillOkResponse, UtilityBillErrorResponse
 from src.domain.entities.base.base_utility_bill import UtilityBillBase
 from src.domain.entities.paid_utility_bill import PaidUtilityBill
 from src.domain.entities.paid_utility_bill_list import PaidUtilityBillList
 from src.services.results_saver import ResultsSaver
 
 from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
-from src.domain.enums import AccommodationStatusEnum, ServiceProviderEnum
+from src.domain.enums import AccommodationStatusEnum, ServiceProviderEnum, DocumentTypeEnum
 from src.domain.entities.accommodation import Accommodation
 from src.domain.entities.accommodation_list import AccommodationList
 from src.services.files_handler import FilesHandler
@@ -25,6 +27,20 @@ from src.infra.exception_handler import ApplicationException
 
 @dataclass
 class App:
+    _folder_base_id = ''
+    _folder_contabil_id = ''
+    _others_folder_base_id = ''
+    _export_folder = ''
+    _database_folder = ''
+    _download_folder = ''
+    _smtp_server = ''
+    _user = ''
+    _password = ''
+    _input_email_folder = ''
+    _output_email_folder = ''
+    _accommodations = ''
+    _except_list = ''
+
     def __init__(self, accommodation_file_id: str, drive: IGoogleDriveHandler, log):
         ApplicationException.when(log is None, 'Log não iniciado.')
         ApplicationException.when(drive is None, 'Google Drive não iniciado.', log)
@@ -34,8 +50,13 @@ class App:
         self._log = log
         self._dict_config = {}
 
-    def _get_processed_utility_bills(self, base_folder) -> PaidUtilityBillList:
-        file_name = os.path.join(base_folder, 'database', 'database.xlsx')
+    @classmethod
+    def _remove_space_and_dot(cls, value: str) -> str:
+        return re.sub('[.\s]+', '', value)
+
+    def _get_processed_utility_bills(self) -> PaidUtilityBillList:
+        self._log.info('Baixando as contas pagas da planilha historica')
+        file_name = os.path.join(self._database_folder, 'database.xlsx')
         if os.path.exists(file_name) is False:
             return PaidUtilityBillList([])
 
@@ -62,9 +83,6 @@ class App:
         return PaidUtilityBillList(contas)
 
     def _get_accommodations(self) -> AccommodationList:
-        def remove_space_and_dot(value: str) -> str:
-            return re.sub('[.\s]+', '', value)
-
         sheet_name = 'Alojamentos'
         stream_file = self._drive.get_excel_file(self._accommodation_file_id)
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
@@ -74,7 +92,7 @@ class App:
 
         accommodation_status_list = list(AccommodationStatusEnum)
 
-        Accommodations = []
+        list_aux = []
         for _, row in df.iterrows():
             column_list = row.index.tolist()
 
@@ -92,16 +110,45 @@ class App:
                 cliente = row[f'{nome_concessionaria} Cliente'] if f'{nome_concessionaria} Cliente' in column_list else ''
                 local = row[f'{nome_concessionaria} Local Consumo'] if f'{nome_concessionaria} Local Consumo' in column_list else ''
 
-                cliente = '' if (str(cliente) == 'None') else remove_space_and_dot(cliente)
-                conta = '' if (str(conta) == 'None') else remove_space_and_dot(conta)
-                local = '' if (str(local) == 'None') else remove_space_and_dot(local)
+                cliente = '' if (str(cliente) == 'None') else self._remove_space_and_dot(cliente)
+                conta = '' if (str(conta) == 'None') else self._remove_space_and_dot(conta)
+                local = '' if (str(local) == 'None') else self._remove_space_and_dot(local)
                 nome_alojamento = '' if (str(nome_alojamento) == 'None') else str(nome_alojamento).replace(' ', '')
                 diretorio = '' if (str(diretorio) == 'None') else str(diretorio).replace(' ', '')
 
                 if cliente or conta or local:
-                    Accommodations.append(Accommodation(id_concessionaria, status, nome_alojamento, diretorio, nif, cliente, conta, local))
+                    list_aux.append(Accommodation(id_concessionaria, status, nome_alojamento, diretorio, nif, cliente, conta, local))
 
-        return AccommodationList(Accommodations)
+        self._accommodations = AccommodationList(list_aux)
+
+    def _get_except_list(self) -> None:
+        sheet_name = 'Excecoes'
+        stream_file = self._drive.get_excel_file(self._accommodation_file_id)
+        df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
+        df = df_.where(pd.notnull(df_), None)
+        cols = df.shape[1]
+        ApplicationException.when(cols != 4, f'A Sheet "{sheet_name}" da planilha de Alojamentos deve ter 4 colunas. ', self._log)
+        expected_columns = ['Alojamento Origem', 'Concessionaria', 'Tipo de Excecao', 'Alojamentos Destino']
+        actual_columns = df.columns.tolist()
+        ApplicationException.when(expected_columns != actual_columns, f'A sheet "{sheet_name}" da planilha de Alojamentoss deveria ter as seguintes colunas {actual_columns}.', self._log)
+
+        result = {}
+        for _, row in df.iterrows():
+            accommodation_name_in = row['Alojamento Origem']
+            except_type  = row['Tipo de Excecao']
+            nome_concessionaria = row['Concessionaria']
+            accommodations_name_out = row['Alojamentos Destino']
+            vet_accommodations = accommodations_name_out.split(';')
+            ApplicationException.when(len(vet_accommodations) == 0, f'O alojamento "{accommodation_name_in}" esta com registro de exceção incompativel. [{accommodations_name_out}]', self._log)
+            for index in range(len(vet_accommodations)):
+                vet_accommodations[index] = vet_accommodations[index].strip()
+                ApplicationException.when(
+                    any(x for x in self._accommodations.Accommodations if x.nome == vet_accommodations[index]) is False,
+                    f'O alojamento "{accommodation_name_in}" esta com registro de exceção incompativel. [{accommodations_name_out}]', self._log)
+
+            result[(accommodation_name_in, nome_concessionaria)] = (except_type, vet_accommodations)
+
+        self._except_list = result
 
     def _get_config_key(self, key: str) -> str:
         value = self._dict_config.get(key, '')
@@ -109,13 +156,11 @@ class App:
         return value
 
     def _get_email_handler(self) -> IEmailHandler:
+        self._log.info('Conectando Email...')
         email = EmailHandler()
-        smtp_server = self._get_config_key('gmail.imap.server')
-        user = self._get_config_key('gmail.user')
-        password = self._get_config_key('gmail.password')
 
         try:
-            email.login(smtp_server, user, password, use_ssl=True)
+            email.login(self._smtp_server, self._user, self._password, use_ssl=True)
         except Exception as error:
             msg = str(error)
             self._log.critical(msg)
@@ -123,61 +168,75 @@ class App:
 
         return email
 
-    def _download_emails(self, email: IEmailHandler, download_folder: str) -> None:
-        input_email_folder = self._get_config_key('gmail.reading.folder')
-        output_email_folder = self._get_config_key('gmail.output.folder')
-        self._log.info('Baixando os arquivos anexados')
-        AttachmentDownloader.execute(download_folder, input_email_folder, output_email_folder, self._log, email)
+    def _download_emails(self, email: IEmailHandler) -> None:
+        self._log.info('Baixando os PDFS dos email')
+        AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
 
-    def _clean_directories(self, download_folder: str, ok_list: List[UtilityBillBase], ignored_list: List[dict]):
-        destination_folder = os.path.join(download_folder, 'processados')
-        list_2_move = [conta.file_name for conta in ok_list]
+    def _clean_directories(self, ok_list: List[UtilityBillBase], ignored_list: List[UtilityBillIgnoredResponse]):
+        self._log.info('Limpando o diretorio de downloads')
+        destination_folder = os.path.join(self._download_folder, 'processados')
+        list_2_move = [conta.complete_file_name for conta in ok_list]
         FilesHandler.move_files(self._log, destination_folder, list_2_move)
 
-        destination_folder = os.path.join(download_folder, 'ignorados')
-        list_2_move = [conta['file_name'] for conta in ignored_list]
+        destination_folder = os.path.join(self._download_folder, 'ignorados')
+        list_2_move = [conta.complete_file_name for conta in ignored_list]
         FilesHandler.move_files(self._log, destination_folder, list_2_move)
 
-    def _handle_downloaded_files(self, download_folder: str, processed_utility_bills) -> None:
-        self._log.info('Baixando os alojamentos da planilha de Alojamentos')
-        accommodations = self._get_accommodations()
-        self._log.info('Analisando os arquivo')
-        return FilesHandler.execute(self._log, download_folder, accommodations, processed_utility_bills)
+    def _handle_downloaded_files(self, processed_utility_bills) -> None:
+        self._log.info('Analisando os arquivos do diretorio de downloads')
+        return FilesHandler.execute(self._log, self._download_folder, self._accommodations, processed_utility_bills)
 
     def _process_exceptions(self, processed_list: List[UtilityBillBase]) -> None:
-        self._excecoes(processed_list)
+        self._log.info('Processando as excecoes')
+        if len(processed_list) == 0:
+            return
 
-    def _upload_files(self, folder_base_id, others_folder_base_id, folder_contabil_id, processed_list, not_found_list, error_list, ignored_list) -> None:
+        if len(self._except_list) == 0:
+            return
+
+        added_records = []
+        for line in processed_list:
+            conta = line.utility_bill
+            exception_data = self._except_list.get((conta.id_alojamento, ServiceProviderEnum(conta.concessionaria).name), '')
+            if (exception_data):
+                x = self._handle_exceptions(line, exception_data)
+                added_records.extend(x)
+
+        processed_list.extend(added_records)
+
+    def _upload_files(self, processed_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse]) -> None:
         uploader = ResultsUploader(self._log, self._drive)
 
         self._log.info('Uploading lista de contas processadas')
-        # uploader.upload_ok_list(folder_base_id, folder_contabil_id, processed_list)
+        uploader.upload_ok_list(self._folder_base_id, self._folder_contabil_id, processed_list)
         self._log.info(f'{len(processed_list)} arquivo(s) processados')
 
         self._log.info('Uploading lista de contas nao processadas')
-        # uploader.upload_other_list(others_folder_base_id, not_found_list, error_list, ignored_list)
+        uploader.upload_other_list(self._others_folder_base_id, not_found_list, error_list, duplicated_list, ignored_list)
         self._log.info(f'{len(not_found_list)} arquivo(s) sem Alojamentos')
         self._log.info(f'{len(error_list)} arquivo(s) com erro')
+        self._log.info(f'{len(duplicated_list)} arquivo(s) duplicados')
         self._log.info(f'{len(ignored_list)} arquivo(s) ignorados')
 
-    def _export_results(self, export_folder: str, database_folder: str, processed_list, not_found_list, error_list, ignored_list, processed_utility_bills: PaidUtilityBillList):
+    def _export_results(self, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills: PaidUtilityBillList):
+        self._log.info('Salvando as planilhas')
         saver = ResultsSaver(self._log, self._drive)
-        saver.execute(database_folder, export_folder, processed_list, not_found_list, error_list, ignored_list, processed_utility_bills.count+1)
+        saver.execute(self._database_folder, self._export_folder, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills.count+1)
 
-    def _handle_exceptions(self, ok_list: List[UtilityBillBase]) -> None:
-        excp1 = [conta for conta in ok_list if conta.id_cliente == '1424424667' and conta.id_contrato == '1424424664' and conta.concessionaria == ServiceProviderEnum.ALTICE_MEO]
-        if len(excp1) > 0:
-            for conta in excp1:
-                new_conta = copy.deepcopy(conta)
-                new_conta.id_alojamento = 'BD_Fernandes108_3' if conta.id_alojamento == 'BD_Fernandes108_4' else 'BD_Fernandes108_4'
+    def _handle_exceptions(self, line, exception_data) -> None:
+        except_type = exception_data[0]
+        accomm_destination_list = exception_data[1]
+        parcela = round(line.utility_bill.valor / len(accomm_destination_list), 2)
 
-                valor_original = conta.valor
-                parcela1 = round(valor_original / 2, 2)
-                parcela2 = valor_original - parcela1
-                conta.valor = parcela1
-                new_conta.valor = parcela2
-
-                ok_list.append(new_conta)
+        ret = []
+        if except_type == 1:
+            for index in range(len(accomm_destination_list)):
+                new_line = copy.deepcopy(line)
+                new_line.utility_bill.valor = parcela
+                new_line.utility_bill.tipo_documento = DocumentTypeEnum.CONTA_CONSUMO_RATEIO
+                new_line.utility_bill.id_alojamento = accomm_destination_list[index]
+                ret.append(new_line)
+        return ret
 
     def _get_config_infos_from_accommodation_file(self) -> dict:
         sheet_name = 'Config'
@@ -194,63 +253,63 @@ class App:
             dict[row['Name']] = row['Value']
         return dict
 
-    def _validate_required_settings(self) -> None:
-        _ = self._get_config_key('localbase.folder')
-        _ = self._get_config_key('gmail.imap.server')
-        _ = self._get_config_key('gmail.user')
-        _ = self._get_config_key('gmail.password')
-        _ = self._get_config_key('gmail.reading.folder')
-        _ = self._get_config_key('gmail.output.folder')
-        _ = self._get_config_key('googledrive.base.folderid')
-        _ = self._get_config_key('googledrive.accounting.folderid')
-        _ = self._get_config_key('googledrive.otherfiles.folderid')
+    def _get_and_validate_config(self)->None:
+        def get_and_validate_folder(base_folder, folder_name) -> str:
+            ret = os.path.join(base_folder, folder_name)
+            ApplicationException.when(not os.path.exists(ret), f'Path does not exist. [{ret}]', self._log)
+            return ret
 
-    def _get_download_folder(self, base_folder: str) -> str:
-        folder = os.path.join(base_folder, 'downloads')
-        ApplicationException.when(not os.path.exists(folder), f'Path does not exist. [{dir}]', self._log)
-        return folder
-
-    def _get_base_folder(self) -> str:
-        folder = self._get_config_key('localbase.folder')
-        ApplicationException.when(not os.path.exists(folder), f'Path does not exist. [{dir}]', self._log)
-        return folder
-
-    def execute(self):
-        self._log.info('Inicio da rotina App.execute')
         self._log.info('Pegando as configurações da planilha de Alojamentoss')
         self._dict_config = self._get_config_infos_from_accommodation_file()
         self._log.info('Checando as configurações')
-        self._validate_required_settings()
-        base_folder = self._get_base_folder()
-        download_folder = self._get_download_folder(base_folder)
-        self._log.info(f'Folders: {base_folder}{download_folder}')
-        self._log.info('Baixando as contas pagas da planilha historica')
-        processed_utility_bills = self._get_processed_utility_bills(base_folder)
 
-        base_folder = self._get_base_folder()
-        download_folder = self._get_download_folder(base_folder)
-        self._log.info(f'Folders: {base_folder}{download_folder}')
+        self._folder_base_id = self._get_config_key('googledrive.base.folderid')
+        self._folder_contabil_id = self._get_config_key('googledrive.accounting.folderid')
+        contabil_folder_name = self._get_config_key('googledrive.accounting.foldername')
+        folder_contabil_id = self._drive.find_file(contabil_folder_name, self._folder_base_id)
+        ApplicationException.when(folder_contabil_id is None, f'Diretório contábil não encontrado. [{contabil_folder_name}]', self._log)
+        ApplicationException.when(folder_contabil_id != self._folder_contabil_id,
+                                  f'Diretório contábil encontrado mas o seu id deve ser o mesmo do informado em "googledrive.accounting.folderid". [{folder_contabil_id}]', self._log)
 
-        self._log.info('Conectando Email...')
+        self._others_folder_base_id = self._get_config_key('googledrive.otherfiles.folderid')
+        others_folder_name = self._get_config_key('googledrive.otherfiles.foldername')
+        folder_others_id = self._drive.find_file(others_folder_name, self._folder_base_id)
+        ApplicationException.when(folder_others_id is None, f'Diretório de arquivos com problemas não encontrado. [{others_folder_name}]', self._log)
+        ApplicationException.when(folder_others_id != self._others_folder_base_id,
+                                  f'Diretório contábil encontrado mas o seu id deve ser o mesmo do informado em "googledrive.accounting.folderid". [{folder_others_id}]', self._log)
+
+        base_folder = self._get_config_key('localbase.folder')
+        ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', self._log)
+
+        self._download_folder = get_and_validate_folder(base_folder, 'downloads')
+        self._export_folder = get_and_validate_folder(base_folder, 'exports')
+        self._database_folder = get_and_validate_folder(base_folder, 'database')
+        ApplicationException.when(not os.path.exists(self._database_folder), f'Path does not exist. [{self._database_folder}]', self._log)
+
+        self._smtp_server = self._get_config_key('gmail.imap.server')
+        self._user = self._get_config_key('gmail.user')
+        self._password = self._get_config_key('gmail.password')
+        self._input_email_folder = self._get_config_key('gmail.reading.folder')
+        self._output_email_folder = self._get_config_key('gmail.output.folder')
+
+        self._log.info('Baixando os alojamentos da planilha de Alojamentos')
+        self._get_accommodations()
+        self._log.info('Baixando as exceções da planilha de Alojamentos')
+        self._get_except_list()
+
+
+    def execute(self):
+        self._log.info('Inicio da rotina App.execute')
+        self._get_and_validate_config()
+
+
+        processed_utility_bills = self._get_processed_utility_bills()
         email = self._get_email_handler()
-        self._log.info('Baixando os PDFS dos email')
-        self._download_emails(email, download_folder)
+        self._download_emails(email)
+        processed_list, not_found_list, error_list, duplicated_list, ignored_list = self._handle_downloaded_files(processed_utility_bills)
+        self._process_exceptions(processed_list)
+        self._upload_files(processed_list, not_found_list, error_list, duplicated_list, ignored_list)
+        self._export_results(processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills)
 
-        self._log.info('Analisando os arquivos do diretorio de downloads')
-        processed_list, not_found_list, error_list, ignored_list = self._handle_downloaded_files(download_folder, processed_utility_bills)
-        self._log.info('Processando as excecoes')
-        self._handle_exceptions(processed_list)
-
-        folder_base_id = self._get_config_key('googledrive.base.folderid')
-        folder_contabil_id = self._get_config_key('googledrive.accounting.folderid')
-        others_folder_base_id = self._get_config_key('googledrive.otherfiles.folderid')
-        self._upload_files(folder_base_id, others_folder_base_id, folder_contabil_id, processed_list, not_found_list, error_list, ignored_list)
-
-        export_folder = os.path.join(base_folder, 'exports')
-        database_folder = os.path.join(base_folder, 'database')
-        self._log.info('Salvando as planilhas')
-        self._export_results(export_folder, database_folder, processed_list, not_found_list, error_list, ignored_list, processed_utility_bills)
-
-        self._log.info('Limpando o diretorio de downloads')
-        # self._clean_directories(download_folder, processed_list, ignored_list)
+        #self._clean_directories(processed_list, ignored_list)
         email.logout()

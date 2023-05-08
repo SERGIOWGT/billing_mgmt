@@ -1,11 +1,12 @@
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, List
 
+from typing import Any, List
+from src.domain.enums.document_type_enum import DocumentTypeEnum
+
+from src.domain.entities.response_error import UtilityBillIgnoredResponse, UtilityBillDuplicatedResponse, UtilityBillOkResponse, UtilityBillBaseResponse
 from src.domain.entities.base.base_utility_bill import UtilityBillBase
-from src.infra.google_drive_handler.Igoogle_drive_handler import \
-    IGoogleDriveHandler
+from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
 
 
 @dataclass
@@ -44,50 +45,55 @@ class ResultsUploader:
 
         return file
 
-    def upload_ok_list(self, folder_base_id: str, folder_contabil_id: str, ok_list: List[UtilityBillBase]) -> None:
-        for conta_ok in ok_list:
-            self._log.info(f'Creating folder {conta_ok.diretorio_google}')
-            folder_id = self._create_folder(conta_ok.diretorio_google, folder_base_id)
+    def upload_ok_list(self, folder_base_id: str, folder_contabil_id: str, ok_list: List[UtilityBillOkResponse]) -> None:
+        for resp in ok_list:
+            self._log.info(f'Creating folder {resp.utility_bill.diretorio_google}')
+            folder_id = self._create_folder(resp.utility_bill.diretorio_google, folder_base_id)
 
-            self._log.info(f'Uploading file {conta_ok.nome_arquivo_google}')
-            file = self._create_file(original_file_name=conta_ok.file_name, google_file_name=conta_ok.nome_arquivo_google, parent_id=folder_id)
-            conta_ok.link_google = f'https://drive.google.com/file/d/{file["id"]}/view?usp=share_link'
+            self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google}')
+            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=folder_id)
+            resp.google_file_id = file["id"]
+            if resp.utility_bill.is_qualquer_destino:
+                self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google} on accounting folder')
 
-            if conta_ok.is_qualquer_destino:
-                self._log.info(f'Uploading file {conta_ok.nome_arquivo_google} on accounting folder')
-                if (conta_ok.dt_vencimento):
-                    dir_name = conta_ok.dt_vencimento.strftime('%Y.%m')
-                    folder_id = self._create_folder(dir_name, folder_contabil_id)
-                    file = self._create_file(original_file_name=conta_ok.file_name, google_file_name=conta_ok.nome_arquivo_google, parent_id=folder_id)
+                if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO or \
+                   resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
+                    data_base = resp.utility_bill.dt_vencimento
                 else:
-                    print('erro')
+                    data_base = resp.utility_bill.dt_emissao
+
+                dir_name = data_base.strftime('%Y.%m')
+                folder_id = self._create_folder(dir_name, folder_contabil_id)
+                file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=folder_id)
 
         return
 
-    def _upload_other_list(self, folder_base_id: str, list: List[UtilityBillBase]) -> None:
-        diretorio_google = '9.OutrosDownloads'
-        self._log.info(f'Creating folder {diretorio_google}')
-        folder_id = self._create_folder(diretorio_google, folder_base_id)
+    def _upload_duplicate_list(self, folder_others_base_id: str, dupl_list: List[UtilityBillDuplicatedResponse]) -> None:
+        self._log.info('Uploading error files - duplicates')
+        for resp in dupl_list:
+            self._log.info(f'Uploading file {resp.file_name}')
+            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
+            resp.google_file_id = file["id"]
+        return
 
+    def _upload_error_list(self, folder_others_base_id: str, error_list: List[UtilityBillBaseResponse]) -> None:
+        self._log.info('Uploading error files - com erro')
+        for resp in error_list:
+            self._log.info(f'Uploading file {resp.file_name}')
+            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
+            resp.google_file_id = file["id"]
+        return
+
+    def _upload_ignored_list(self, folder_others_base_id: str, list: List[UtilityBillIgnoredResponse]) -> None:
+        self._log.info('Uploading Ignored files')
         for conta in list:
-            file_name = Path(conta.file_name).name
-            self._log.info(f'Uploading file {file_name}')
-            file = self._create_file(original_file_name=conta.file_name, google_file_name=file_name, parent_id=folder_id)
-            conta.link_google = f'https://drive.google.com/file/d/{file["id"]}/view?usp=share_link'
-        return
+            self._log.info(f'Uploading file {conta.file_name}')
+            file = self._create_file(original_file_name=conta.complete_file_name, google_file_name=conta.file_name, parent_id=folder_others_base_id)
+            conta.google_file_id = file["id"]
 
-    def upload_other_list(self, folder_base_id: str, not_found_list: List[UtilityBillBase], error_list: List[UtilityBillBase], ignored_list: List[Any]) -> None:
-        self._upload_other_list(folder_base_id, not_found_list)
-        self._upload_other_list(folder_base_id, error_list)
-
-        diretorio_google = '9.OutrosDownloads'
-        self._log.info(f'Creating folder {diretorio_google}')
-        folder_id = self._create_folder(diretorio_google, folder_base_id)
-
-        for line in ignored_list:
-            file_name = Path(line['file_name']).name
-            self._log.info(f'Uploading file {file_name}')
-            file = self._create_file(original_file_name=line['file_name'], google_file_name=file_name, parent_id=folder_id)
-            line['Link Google'] = f'https://drive.google.com/file/d/{file["id"]}/view?usp=share_link'
-
-        return
+    def upload_other_list(self, folder_others_base_id: str, not_found_list: List[UtilityBillBase], error_list: List[UtilityBillBase], \
+                            duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse]) -> None:
+        self._upload_error_list(folder_others_base_id, not_found_list)
+        self._upload_error_list(folder_others_base_id, error_list)
+        self._upload_duplicate_list(folder_others_base_id, duplicated_list)
+        self._upload_ignored_list(folder_others_base_id, ignored_list)
