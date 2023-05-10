@@ -14,8 +14,8 @@ class UtilityBillErrorBaseResponse(UtilityBillBaseResponse):
 
 @dataclass
 class UtilityBillIgnoredResponse(UtilityBillErrorBaseResponse):
-    error_type: str = ''
-    
+    ...
+
 @dataclass
 class UtilityBillOkResponse(UtilityBillBaseResponse):
     utility_bill: Optional[UtilityBillBase] = None

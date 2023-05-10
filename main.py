@@ -1,5 +1,6 @@
 import logging
 import os
+from src.infra.application_log.app_log_handler import ApplicationLogHandler
 from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
 from src.infra.app_configuration_reader.app_configuration_reader import AppConfigurationReader
 from src.app import App
@@ -24,7 +25,10 @@ def get_accommodation_file_id() -> None:
 
 if __name__ == '__main__':
     #try:
-        log = create_logger(__name__)
+        _log = create_logger(__name__)
+
+        log = ApplicationLogHandler(_log)
+
         log.info('App started')
         config_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
 

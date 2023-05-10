@@ -225,3 +225,22 @@ class UtilityBillBase:
             elif (self.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):
                 part_name += 'FZ'
         return f'{part_name}_{_concessionaria}_{_alojamento}.pdf'
+    
+    def __eq__(self, other):
+        if isinstance(other, UtilityBillBase):
+            return self.concessionaria == other.concessionaria and \
+                self.tipo_servico == other.tipo_servico and \
+                self.id_documento == other.id_documento and \
+                self.id_contribuinte == other.id_contribuinte and \
+                self.id_cliente == other.id_cliente and \
+                self.id_contrato == other.id_contrato and  \
+                self.str_emissao == other.str_emissao and  \
+                self.str_vencimento == other.str_vencimento and  \
+                self.str_valor == other.str_valor
+
+        return False
+
+    def __hash__(self):
+        return hash((self.concessionaria, self.tipo_servico, self.id_documento,
+                    self.id_contribuinte, self.id_cliente, self.id_contrato,
+                    self.str_emissao, self.str_vencimento, self.str_valor))

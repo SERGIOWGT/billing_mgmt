@@ -55,7 +55,7 @@ class App:
         return re.sub('[.\s]+', '', value)
 
     def _get_processed_utility_bills(self) -> PaidUtilityBillList:
-        self._log.info('Baixando as contas pagas da planilha historica')
+        self._log.info('Downloading the paid bills from the historical worksheet')
         file_name = os.path.join(self._database_folder, 'database.xlsx')
         if os.path.exists(file_name) is False:
             return PaidUtilityBillList([])
@@ -64,12 +64,14 @@ class App:
         df_ = pd.read_excel(file_name, dtype={'N. Documento / N. Fatura': object})
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
-        ApplicationException.when(cols != 22, 'A Planilha de Histórico deve ter 22 colunas. ', self._log)
-        expected_columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte', 'Local / Instalacao',
-                            'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia', 'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo Google', 'Link Google', 'Arquivo Original']
+        ApplicationException.when(cols != 22, 'History Sheet must have 22 columns. ', self._log)
+        expected_columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico',
+                            'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte', 'Local / Instalacao',
+                            'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia', 
+                            'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 'Arquivo Google', 'Arquivo Original', 'Data Processamento']
         actual_columns = df.columns.tolist()
 
-        ApplicationException.when(expected_columns != actual_columns, f'A Planilha Histórica deveria ter as colunas {actual_columns}.', self._log)
+        ApplicationException.when(expected_columns != actual_columns, f'The Historical Spreadsheet should have the columns {actual_columns}.', self._log)
         for _, row in df.iterrows():
             nome_concessionaria = row['Concessionaria']
             nome_concessionaria = nome_concessionaria.replace('\n', '')
@@ -156,7 +158,7 @@ class App:
         return value
 
     def _get_email_handler(self) -> IEmailHandler:
-        self._log.info('Conectando Email...')
+        self._log.info('Connecting Email...')
         email = EmailHandler()
 
         try:
@@ -164,16 +166,16 @@ class App:
         except Exception as error:
             msg = str(error)
             self._log.critical(msg)
-            raise ApplicationException('Erro ao conectar nom email') from error
+            raise ApplicationException('Error connecting email') from error
 
         return email
 
     def _download_emails(self, email: IEmailHandler) -> None:
-        self._log.info('Baixando os PDFS dos email')
+        self._log.info('Downloading PDF files from emails')
         AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
 
     def _clean_directories(self, ok_list: List[UtilityBillBase], ignored_list: List[UtilityBillIgnoredResponse]):
-        self._log.info('Limpando o diretorio de downloads')
+        self._log.info('Cleaning up directories')
         destination_folder = os.path.join(self._download_folder, 'processados')
         list_2_move = [conta.complete_file_name for conta in ok_list]
         FilesHandler.move_files(self._log, destination_folder, list_2_move)
@@ -183,11 +185,11 @@ class App:
         FilesHandler.move_files(self._log, destination_folder, list_2_move)
 
     def _handle_downloaded_files(self, processed_utility_bills) -> None:
-        self._log.info('Analisando os arquivos do diretorio de downloads')
+        self._log.info('Processing downloaded files')
         return FilesHandler.execute(self._log, self._download_folder, self._accommodations, processed_utility_bills)
 
     def _process_exceptions(self, processed_list: List[UtilityBillBase]) -> None:
-        self._log.info('Processando as excecoes')
+        self._log.info('Processing the exceptions')
         if len(processed_list) == 0:
             return
 
@@ -207,19 +209,19 @@ class App:
     def _upload_files(self, processed_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse]) -> None:
         uploader = ResultsUploader(self._log, self._drive)
 
-        self._log.info('Uploading lista de contas processadas')
+        self._log.info('Uploading list of processed')
         uploader.upload_ok_list(self._folder_base_id, self._folder_contabil_id, processed_list)
-        self._log.info(f'{len(processed_list)} arquivo(s) processados')
+        self._log.info(f'{len(processed_list)} file(s) processed')
 
-        self._log.info('Uploading lista de contas nao processadas')
+        self._log.info('Uploading list of unprocessed ')
         uploader.upload_other_list(self._others_folder_base_id, not_found_list, error_list, duplicated_list, ignored_list)
-        self._log.info(f'{len(not_found_list)} arquivo(s) sem Alojamentos')
-        self._log.info(f'{len(error_list)} arquivo(s) com erro')
-        self._log.info(f'{len(duplicated_list)} arquivo(s) duplicados')
-        self._log.info(f'{len(ignored_list)} arquivo(s) ignorados')
+        self._log.info(f'{len(not_found_list)} file(s) without accommodation')
+        self._log.info(f'{len(error_list)} error file(s)')
+        self._log.info(f'{len(duplicated_list)} duplicate file(s)')
+        self._log.info(f'{len(ignored_list)} ignored file(s)')
 
     def _export_results(self, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills: PaidUtilityBillList):
-        self._log.info('Salvando as planilhas')
+        self._log.info('Saving the worksheets')
         saver = ResultsSaver(self._log, self._drive)
         saver.execute(self._database_folder, self._export_folder, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills.count+1)
 
@@ -259,24 +261,24 @@ class App:
             ApplicationException.when(not os.path.exists(ret), f'Path does not exist. [{ret}]', self._log)
             return ret
 
-        self._log.info('Pegando as configurações da planilha de Alojamentoss')
+        self._log.info('Getting the settings from the Accommodation worksheet')
         self._dict_config = self._get_config_infos_from_accommodation_file()
-        self._log.info('Checando as configurações')
+        self._log.info('Checking the settings')
 
         self._folder_base_id = self._get_config_key('googledrive.base.folderid')
         self._folder_contabil_id = self._get_config_key('googledrive.accounting.folderid')
         contabil_folder_name = self._get_config_key('googledrive.accounting.foldername')
         folder_contabil_id = self._drive.find_file(contabil_folder_name, self._folder_base_id)
-        ApplicationException.when(folder_contabil_id is None, f'Diretório contábil não encontrado. [{contabil_folder_name}]', self._log)
+        ApplicationException.when(folder_contabil_id is None, f'Accounting directory not found. [{contabil_folder_name}]', self._log)
         ApplicationException.when(folder_contabil_id != self._folder_contabil_id,
-                                  f'Diretório contábil encontrado mas o seu id deve ser o mesmo do informado em "googledrive.accounting.folderid". [{folder_contabil_id}]', self._log)
+                                  f'Accounting directory found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_contabil_id}]', self._log)
 
         self._others_folder_base_id = self._get_config_key('googledrive.otherfiles.folderid')
         others_folder_name = self._get_config_key('googledrive.otherfiles.foldername')
         folder_others_id = self._drive.find_file(others_folder_name, self._folder_base_id)
-        ApplicationException.when(folder_others_id is None, f'Diretório de arquivos com problemas não encontrado. [{others_folder_name}]', self._log)
+        ApplicationException.when(folder_others_id is None, f'Other files directory not found [{others_folder_name}]', self._log)
         ApplicationException.when(folder_others_id != self._others_folder_base_id,
-                                  f'Diretório contábil encontrado mas o seu id deve ser o mesmo do informado em "googledrive.accounting.folderid". [{folder_others_id}]', self._log)
+                                  f'Other files directory found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_others_id}]', self._log)
 
         base_folder = self._get_config_key('localbase.folder')
         ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', self._log)
@@ -292,24 +294,37 @@ class App:
         self._input_email_folder = self._get_config_key('gmail.reading.folder')
         self._output_email_folder = self._get_config_key('gmail.output.folder')
 
-        self._log.info('Baixando os alojamentos da planilha de Alojamentos')
+        self._log.info('Downloading accommodations from the worksheet')
         self._get_accommodations()
-        self._log.info('Baixando as exceções da planilha de Alojamentos')
+        self._log.info('Downloading exceptions from the worksheet')
         self._get_except_list()
 
+    def _handle_duplicates(self, processed_list: List[UtilityBillOkResponse], duplicated_list:  List[UtilityBillDuplicatedResponse]):
+        index_of_duplicates = []
+        for i in range(0, len(processed_list)-1):
+            for j in range(i+1, len(processed_list)):
+                if (processed_list[i].utility_bill == processed_list[j].utility_bill):
+                    index_of_duplicates.append(j)
+
+        for indx in sorted(index_of_duplicates, reverse=True):
+            obj = processed_list[indx]
+            obj.error_type = '8'
+            duplicated_list.append(processed_list[indx])
+            del processed_list[indx]
 
     def execute(self):
-        self._log.info('Inicio da rotina App.execute')
+        self._log.info('Start of the App.execute routine')
         self._get_and_validate_config()
-
 
         processed_utility_bills = self._get_processed_utility_bills()
         email = self._get_email_handler()
         self._download_emails(email)
         processed_list, not_found_list, error_list, duplicated_list, ignored_list = self._handle_downloaded_files(processed_utility_bills)
+
+        self._handle_duplicates(processed_list, duplicated_list)
         self._process_exceptions(processed_list)
         self._upload_files(processed_list, not_found_list, error_list, duplicated_list, ignored_list)
         self._export_results(processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills)
 
-        #self._clean_directories(processed_list, ignored_list)
+        self._clean_directories(processed_list, ignored_list)
         email.logout()
