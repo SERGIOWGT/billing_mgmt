@@ -1,8 +1,10 @@
+from datetime import datetime
 import copy
 import io
 import os
 from dataclasses import dataclass
 import re
+import time
 from typing import List
 import pandas as pd
 
@@ -30,6 +32,7 @@ class App:
     _folder_base_id = ''
     _folder_contabil_id = ''
     _others_folder_base_id = ''
+    _folder_client_id = ''
     _export_folder = ''
     _database_folder = ''
     _download_folder = ''
@@ -55,7 +58,7 @@ class App:
         return re.sub('[.\s]+', '', value)
 
     def _get_processed_utility_bills(self) -> PaidUtilityBillList:
-        self._log.info('Downloading the paid bills from the historical worksheet')
+        self._log.info('Downloading the paid bills from the historical worksheet', instant_msg=True)
         file_name = os.path.join(self._database_folder, 'database.xlsx')
         if os.path.exists(file_name) is False:
             return PaidUtilityBillList([])
@@ -158,7 +161,7 @@ class App:
         return value
 
     def _get_email_handler(self) -> IEmailHandler:
-        self._log.info('Connecting Email...')
+        self._log.info('Connecting Email...', instant_msg=True)
         email = EmailHandler()
 
         try:
@@ -171,11 +174,17 @@ class App:
         return email
 
     def _download_emails(self, email: IEmailHandler) -> None:
-        self._log.info('Downloading PDF files from emails')
-        AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        self._log.info('Downloading PDF files from emails', instant_msg=True)
+        _, num_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        if num_files == 0:
+            self._log.info('No files downloaded', instant_msg=True, warn=True)
+        elif num_files == 1:
+            self._log.info('1 file downloaded', instant_msg=True, warn=True)
+        else:
+            self._log.info(f'{num_files} files downloaded', instant_msg=True, warn=True)
 
     def _clean_directories(self, ok_list: List[UtilityBillBase], ignored_list: List[UtilityBillIgnoredResponse]):
-        self._log.info('Cleaning up directories')
+        self._log.info('Cleaning up directories', instant_msg=True)
         destination_folder = os.path.join(self._download_folder, 'processados')
         list_2_move = [conta.complete_file_name for conta in ok_list]
         FilesHandler.move_files(self._log, destination_folder, list_2_move)
@@ -185,11 +194,11 @@ class App:
         FilesHandler.move_files(self._log, destination_folder, list_2_move)
 
     def _handle_downloaded_files(self, processed_utility_bills) -> None:
-        self._log.info('Processing downloaded files')
+        self._log.info('Processing downloaded files', instant_msg=True)
         return FilesHandler.execute(self._log, self._download_folder, self._accommodations, processed_utility_bills)
 
     def _process_exceptions(self, processed_list: List[UtilityBillBase]) -> None:
-        self._log.info('Processing the exceptions')
+        self._log.info('Processing the exceptions', instant_msg=True)
         if len(processed_list) == 0:
             return
 
@@ -209,19 +218,19 @@ class App:
     def _upload_files(self, processed_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse]) -> None:
         uploader = ResultsUploader(self._log, self._drive)
 
-        self._log.info('Uploading list of processed')
-        uploader.upload_ok_list(self._folder_base_id, self._folder_contabil_id, processed_list)
-        self._log.info(f'{len(processed_list)} file(s) processed')
+        self._log.info('Uploading list of processed', instant_msg=True)
+        uploader.upload_ok_list(self._folder_client_id, self._folder_contabil_id, processed_list)
+        self._log.info(f'{len(processed_list)} file(s) processed', instant_msg=True)
 
-        self._log.info('Uploading list of unprocessed ')
+        self._log.info('Uploading list of unprocessed ', instant_msg=True)
         uploader.upload_other_list(self._others_folder_base_id, not_found_list, error_list, duplicated_list, ignored_list)
-        self._log.info(f'{len(not_found_list)} file(s) without accommodation')
-        self._log.info(f'{len(error_list)} error file(s)')
-        self._log.info(f'{len(duplicated_list)} duplicate file(s)')
-        self._log.info(f'{len(ignored_list)} ignored file(s)')
+        self._log.info(f'{len(not_found_list)} file(s) without accommodation', instant_msg=True)
+        self._log.info(f'{len(error_list)} error file(s)', instant_msg=True)
+        self._log.info(f'{len(duplicated_list)} duplicate file(s)', instant_msg=True)
+        self._log.info(f'{len(ignored_list)} ignored file(s)', instant_msg=True)
 
     def _export_results(self, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills: PaidUtilityBillList):
-        self._log.info('Saving the worksheets')
+        self._log.info('Saving the worksheets', instant_msg=True)
         saver = ResultsSaver(self._log, self._drive)
         saver.execute(self._database_folder, self._export_folder, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills.count+1)
 
@@ -261,24 +270,34 @@ class App:
             ApplicationException.when(not os.path.exists(ret), f'Path does not exist. [{ret}]', self._log)
             return ret
 
-        self._log.info('Getting the settings from the Accommodation worksheet')
+        self._log.info('Getting the settings from the Accommodation worksheet', instant_msg=True)
         self._dict_config = self._get_config_infos_from_accommodation_file()
-        self._log.info('Checking the settings')
+        self._log.info('Checking the settings', instant_msg=True)
 
-        self._folder_base_id = self._get_config_key('googledrive.base.folderid')
+        folder_base_id = self._get_config_key('googledrive.base.folderid')
+        if folder_base_id.upper() in ['VAZIO', 'RAIZ']:
+            folder_base_id = ''
+
+        self._folder_client_id = self._get_config_key('googledrive.client.folderid')
+        client_folder_name = self._get_config_key('googledrive.client.foldername')
+        folder_client_id = self._drive.find_file(client_folder_name, folder_base_id)
+        ApplicationException.when(folder_client_id is None, f'Client folder not found. [{client_folder_name}]', self._log)
+        ApplicationException.when(folder_client_id != self._folder_client_id,
+                                  f'Client folder found but its id must be the same as the advisor in "googledrive.client.folderid". [{folder_client_id}]', self._log)
+
         self._folder_contabil_id = self._get_config_key('googledrive.accounting.folderid')
         contabil_folder_name = self._get_config_key('googledrive.accounting.foldername')
-        folder_contabil_id = self._drive.find_file(contabil_folder_name, self._folder_base_id)
-        ApplicationException.when(folder_contabil_id is None, f'Accounting directory not found. [{contabil_folder_name}]', self._log)
+        folder_contabil_id = self._drive.find_file(contabil_folder_name, folder_base_id)
+        ApplicationException.when(folder_contabil_id is None, f'Accounting folder not found. [{contabil_folder_name}]', self._log)
         ApplicationException.when(folder_contabil_id != self._folder_contabil_id,
-                                  f'Accounting directory found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_contabil_id}]', self._log)
+                                  f'Accounting folder found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_contabil_id}]', self._log)
 
         self._others_folder_base_id = self._get_config_key('googledrive.otherfiles.folderid')
         others_folder_name = self._get_config_key('googledrive.otherfiles.foldername')
-        folder_others_id = self._drive.find_file(others_folder_name, self._folder_base_id)
-        ApplicationException.when(folder_others_id is None, f'Other files directory not found [{others_folder_name}]', self._log)
+        folder_others_id = self._drive.find_file(others_folder_name, folder_base_id)
+        ApplicationException.when(folder_others_id is None, f'Other files folder not found [{others_folder_name}]', self._log)
         ApplicationException.when(folder_others_id != self._others_folder_base_id,
-                                  f'Other files directory found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_others_id}]', self._log)
+                                  f'Other files folder found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_others_id}]', self._log)
 
         base_folder = self._get_config_key('localbase.folder')
         ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', self._log)
@@ -294,9 +313,9 @@ class App:
         self._input_email_folder = self._get_config_key('gmail.reading.folder')
         self._output_email_folder = self._get_config_key('gmail.output.folder')
 
-        self._log.info('Downloading accommodations from the worksheet')
+        self._log.info('Downloading accommodations from the worksheet', instant_msg=True)
         self._get_accommodations()
-        self._log.info('Downloading exceptions from the worksheet')
+        self._log.info('Downloading exceptions from the worksheet', instant_msg=True)
         self._get_except_list()
 
     def _handle_duplicates(self, processed_list: List[UtilityBillOkResponse], duplicated_list:  List[UtilityBillDuplicatedResponse]):
@@ -312,19 +331,51 @@ class App:
             duplicated_list.append(processed_list[indx])
             del processed_list[indx]
 
+    def _check_residence_change(self, processed_list: List[UtilityBillOkResponse]) -> None:
+        ...
+
+    def _check_missing_utility_bills(self) -> None:
+        time.sleep(5)
+        self._log.info('Downloading the paid bills from the historical worksheet', instant_msg=True)
+        file_name = os.path.join(self._database_folder, 'database.xlsx')
+        if os.path.exists(file_name) is False:
+            return
+
+        df_ = pd.read_excel(file_name, dtype={'N. Documento / N. Fatura': object})
+        df = df_.where(pd.notnull(df_), None)
+        maior_data = df.groupby(['Alojamento', 'Concessionaria'])['Data Processamento'].max()
+
+        now = datetime.now()
+        for index, value in maior_data.items():
+            accomodation, service_provider = index
+            if (len(value) > 10):
+                value = str(value)[0:10]
+            date_obj = datetime.strptime(value, '%Y/%m/%d')
+            diferenca = now - date_obj
+            if diferenca.days > 30:
+                msg = f' o Alojamento {accomodation} recebeu a última conta da {service_provider} há mais de 30 dias (em {value})'
+                self._log.info(msg, instant_msg=True, warn=True)
+
     def execute(self):
-        self._log.info('Start of the App.execute routine')
+        self._log.info('Start of the App.execute routine', instant_msg=True)
         self._get_and_validate_config()
 
         processed_utility_bills = self._get_processed_utility_bills()
         email = self._get_email_handler()
         self._download_emails(email)
         processed_list, not_found_list, error_list, duplicated_list, ignored_list = self._handle_downloaded_files(processed_utility_bills)
+        num_files = len(processed_list) + len(not_found_list) + len(error_list) + len(duplicated_list) + len(ignored_list)
+        if num_files == 0:
+            self._log.info('No files processed', instant_msg=True, warn=True)
+        elif num_files == 1:
+            self._log.info('1 file processed', instant_msg=True, warn=True)
+        else:
+            self._log.info(f'{num_files} files processed', instant_msg=True, warn=True)
 
         self._handle_duplicates(processed_list, duplicated_list)
         self._process_exceptions(processed_list)
         self._upload_files(processed_list, not_found_list, error_list, duplicated_list, ignored_list)
         self._export_results(processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills)
-
         self._clean_directories(processed_list, ignored_list)
+        self._check_missing_utility_bills()
         email.logout()

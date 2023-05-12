@@ -47,14 +47,14 @@ class ResultsUploader:
 
     def upload_ok_list(self, folder_base_id: str, folder_contabil_id: str, ok_list: List[UtilityBillOkResponse]) -> None:
         for resp in ok_list:
-            self._log.info(f'Creating folder {resp.utility_bill.diretorio_google}')
+            self._log.info(f'Creating folder {resp.utility_bill.diretorio_google}', instant_msg=True)
             folder_id = self._create_folder(resp.utility_bill.diretorio_google, folder_base_id)
 
-            self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google}')
+            self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google}', instant_msg=True)
             file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=folder_id)
             resp.google_file_id = file["id"]
             if resp.utility_bill.is_qualquer_destino:
-                self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google} on accounting folder')
+                self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
 
                 if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO or \
                    resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
@@ -69,25 +69,25 @@ class ResultsUploader:
         return
 
     def _upload_duplicate_list(self, folder_others_base_id: str, dupl_list: List[UtilityBillDuplicatedResponse]) -> None:
-        self._log.info('Uploading error files - duplicates')
+        self._log.info('Uploading error files - duplicates', instant_msg=True)
         for resp in dupl_list:
-            self._log.info(f'Uploading file {resp.file_name}')
+            self._log.info(f'Uploading file {resp.file_name}', instant_msg=True)
             file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
             resp.google_file_id = file["id"]
         return
 
     def _upload_error_list(self, folder_others_base_id: str, error_list: List[UtilityBillBaseResponse]) -> None:
-        self._log.info('Uploading error files - com erro')
+        self._log.info('Uploading error files', instant_msg=True)
         for resp in error_list:
-            self._log.info(f'Uploading file {resp.file_name}')
+            self._log.info(f'Uploading file {resp.file_name}', instant_msg=True)
             file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
             resp.google_file_id = file["id"]
         return
 
     def _upload_ignored_list(self, folder_others_base_id: str, list: List[UtilityBillIgnoredResponse]) -> None:
-        self._log.info('Uploading Ignored files')
+        self._log.info('Uploading Ignored files', instant_msg=True)
         for conta in list:
-            self._log.info(f'Uploading file {conta.file_name}')
+            self._log.info(f'Uploading file {conta.file_name}', instant_msg=True)
             file = self._create_file(original_file_name=conta.complete_file_name, google_file_name=conta.file_name, parent_id=folder_others_base_id)
             conta.google_file_id = file["id"]
 

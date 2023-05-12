@@ -49,6 +49,9 @@ class EmailHandler(IEmailHandler):
         (result, email_data) = self.imap_session.uid('fetch', message_uid, '(RFC822)')
         ApplicationException.when(result != 'OK', f'Error fetching message {message_uid}')
 
+        if (len(email_data) > 0) and email_data[0] is None:
+            return '', ''
+
         raw_email = email_data[0][1]
         raw_email_string = raw_email.decode('latin-1')
         email_message = email.message_from_string(raw_email_string)

@@ -29,7 +29,7 @@ class FilesHandler:
 
         for file_name in [f.upper() for f in os.listdir(download_folder) if os.path.isfile(os.path.join(download_folder, f)) and f.upper().endswith('.PDF') == True]:
             complete_file_name = os.path.join(download_folder, file_name)
-            log.info(f'Processing file: {complete_file_name}')
+            log.info(f'Processing file: {file_name}', instant_msg=True)
 
             all_text = PdfExtractorHandler().get_text(complete_file_name)
             conta_consumo = UtilityBillFactory().execute(all_text)

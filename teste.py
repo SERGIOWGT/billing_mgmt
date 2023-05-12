@@ -1,6 +1,5 @@
 import requests
 
-
 def send_to_telegram(message):
 
     apiToken = '5806073657:AAGGz4AnYqATtzPeXTGY_KYQWTBaVhXdV74'
