@@ -273,7 +273,7 @@ class App:
         self._log.info('Getting the settings from the Accommodation worksheet', instant_msg=True)
         self._dict_config = self._get_config_infos_from_accommodation_file()
         self._log.info('Checking the settings', instant_msg=True)
-
+        
         folder_base_id = self._get_config_key('googledrive.base.folderid')
         if folder_base_id.upper() in ['VAZIO', 'RAIZ']:
             folder_base_id = ''

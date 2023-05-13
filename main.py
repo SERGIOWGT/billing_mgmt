@@ -1,10 +1,16 @@
 import logging
 import os
 from src.infra.application_log.app_log_handler import ApplicationLogHandler
+from src.infra.exception_handler import ApplicationException
 from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
 from src.infra.app_configuration_reader.app_configuration_reader import AppConfigurationReader
 from src.app import App
 
+
+def get_config_key(log, dict_config, key: str) -> str:
+    value = dict_config.get(key, '')
+    ApplicationException.when(value == '', f'Chave não encontrada no arquivo de Accommodations. [key={key}]', log)
+    return value
 
 def create_logger(name: str):
     logging.basicConfig(

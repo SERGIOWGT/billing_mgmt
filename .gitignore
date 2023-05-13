@@ -18,3 +18,9 @@ src/__pycache__/
 
 temp/*.*
 exports/
+
+.eggs
+
+dist/
+
+src/Robot_QQDestino.egg-info
