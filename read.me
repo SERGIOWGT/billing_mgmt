@@ -1,10 +1,15 @@
-1) Copia o arquivo.gz e extrai em algum diretorio
+0) Crie uma conta do gmail
+1) Copia o arquivo.gz e extrair em algum diretorio
 2) Entre no diretorio e execute o comando pip3 install .  
-3) Configuração do arquivo config.json, conforme manual, item 3:
-   3.1) Copie o arquivo alojamentos.xlsx que está no diretorio dados do robotpara algum lugar no seu google drive.
-   3.2) Após copiar o arquivo, pegue o id do arquivo e salve em algum lugar, conforme manual item 3.a
-   3.3) Va no arquivo config.json-sample e renomeie para config.json
-   3.4) Entre no arquivo config.json e coloque o id salvo no item anterior no local indicado, conforme manual item 3
-4) Crie uma senha para o email que receberá as contas das concessionarias, conforme manual, item 2.
-5) Configure os folders do email, conforme manual item 4
-6) Execute o comando pytho3 main.py
+3) Entre no drive (google drive) da conta recem criada no gmail.
+4) Copie o arquivo alojamentos-sample.xlsx que está no diretorio [diretorio do robot]/sample-files do robot para algum lugar no seu google drive.
+5) renomeie o arquivo alojamentos-sample.xlsx para alojamentos.xlsx
+6) Configuração do arquivo config.json, conforme manual, item 3:
+   6.1) Após renomear o arquivo, pegue o id do arquivo (google drive) e salve em algum lugar, conforme manual item 3.a
+   6.2) Copie o arquivo [diretorio do robot]/sample-files/config.json-sample e copie para o diretorio [diretorio do robot]/config
+   6.3) Renomeie o arquivo config.json-sample para config.json
+   6.4) Entre no arquivo config.json e coloque o id salvo no item 6.1 no local indicado, conforme manual item 3
+7) Crie uma senha para o email que receberá as contas das concessionarias, conforme manual, item 2. Guarde essa senha...
+8) Entre agora na sua conta de email e crie uma pasta (ou label) chamado de processados
+9) Volte para o  google drive e configure os folders do email, conforme manual item 4
+9) Execute o comando python3 main.py

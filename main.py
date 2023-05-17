@@ -1,16 +1,13 @@
 import logging
 import os
+
+from src.app import App
+from src.infra.app_configuration_reader.app_configuration_reader import \
+    AppConfigurationReader
 from src.infra.application_log.app_log_handler import ApplicationLogHandler
 from src.infra.exception_handler import ApplicationException
-from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
-from src.infra.app_configuration_reader.app_configuration_reader import AppConfigurationReader
-from src.app import App
-
-
-def get_config_key(log, dict_config, key: str) -> str:
-    value = dict_config.get(key, '')
-    ApplicationException.when(value == '', f'Chave não encontrada no arquivo de Accommodations. [key={key}]', log)
-    return value
+from src.infra.google_drive_handler.google_drive_handler import \
+    GoogleDriveHandler
 
 def create_logger(name: str):
     logging.basicConfig(
@@ -24,30 +21,39 @@ def create_logger(name: str):
     return logging.getLogger(name)
 
 
-def get_accommodation_file_id() -> None:
-    log.info('Local config file read', instant_msg=True)
-    app_config_reader = AppConfigurationReader(os.path.join(config_directory, 'config.json'))
-    return app_config_reader.get('google_drive_accommodation_fileid')
+def check_config_session(key)->str:
+    value = app_config_reader.get(key)
+    ApplicationException.when(value == '', f"'{key}' does not exist or empty.")
+    return value
 
 if __name__ == '__main__':
-    #try:
-        _log = create_logger(__name__)
-
-        log = ApplicationLogHandler(_log)
+    try:
+        log = ApplicationLogHandler(create_logger(__name__))
+        log.info('App started')
+        log.info('Reading local config file')
+        config_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
+        config_path = os.path.join(config_directory, 'config.json')
+        ApplicationException.when(not os.path.exists(config_path), f'Path does not exist. [{config_path}]')
+        app_config_reader = AppConfigurationReader(config_path)
+        accommodation_fileid = check_config_session('google_drive_accommodation_fileid')
+        
+        log.token_execution = app_config_reader.get('telegram_exec_bot_token')
+        log.token_warn = app_config_reader.get('telegram_warn_bot_token')
+        log.token_error = log.token_execution
+        log.list_execution_chat_id = app_config_reader.get('telegram_exec_bot_chats_id')
+        log.list_warn_chat_id = app_config_reader.get('telegram_warn_bot_chats_id')
 
         log.info('App started', instant_msg=True, warn=True)
-        config_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
-
         google_drive_handler = GoogleDriveHandler(config_directory)
         log.info('Google drive connected', instant_msg=True)
 
-        app = App(get_accommodation_file_id(), google_drive_handler, log)
+        app = App(accommodation_fileid, google_drive_handler, log)
         app.execute()
 
-    #except Exception as error:
-    #    msg = str(error)
-    #    log.critical(msg)
-    #    print(msg)
+    except Exception as error:
+        msg = str(error)
+        log.critical(msg)
+        print(msg)
 
         log.info('App Finished', instant_msg=True, warn=True)
 

@@ -9,7 +9,11 @@ def create_empty_directories():
     # Lista de diretórios vazios a serem criados
     directories = [
         'logs',
-        'config'
+        'config',
+        'database',
+        'downloads',
+        'exports',
+        'sample-files'
     ]
 
     # Criação dos diretórios vazios
@@ -31,7 +35,8 @@ setup(
         ('', ['requirements.txt']),
         ('', ['main.py']),
         ('config', ['config/client_secret.json']),
-        ('config', ['config/config.json-sample']), 
+        ('sample-files', ['sample-files/config.json-sample']), 
+        ('sample-files', ['sample-files/Alojamentos-sample.xlsx']),
         ('src', ['src/app.py']),
         ('', ['main.py'])
     ],

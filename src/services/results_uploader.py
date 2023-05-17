@@ -50,19 +50,20 @@ class ResultsUploader:
             self._log.info(f'Creating folder {resp.utility_bill.diretorio_google}', instant_msg=True)
             folder_id = self._create_folder(resp.utility_bill.diretorio_google, folder_base_id)
 
+            if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO or \
+                resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
+                data_base = resp.utility_bill.dt_vencimento
+            else:
+                data_base = resp.utility_bill.dt_emissao
+
+            dir_name = data_base.strftime('%Y.%m')
+            date_folder_id = self._create_folder(dir_name, folder_id)
             self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google}', instant_msg=True)
-            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=folder_id)
+            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=date_folder_id)
             resp.google_file_id = file["id"]
             if resp.utility_bill.is_qualquer_destino:
                 self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
 
-                if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO or \
-                   resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
-                    data_base = resp.utility_bill.dt_vencimento
-                else:
-                    data_base = resp.utility_bill.dt_emissao
-
-                dir_name = data_base.strftime('%Y.%m')
                 folder_id = self._create_folder(dir_name, folder_contabil_id)
                 file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=folder_id)
 

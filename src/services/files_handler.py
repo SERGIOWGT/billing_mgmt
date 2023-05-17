@@ -17,7 +17,11 @@ class FilesHandler:
     def move_files(log, destination_folder: str, file_list: List[str]) -> None:
         for file_name in file_list:
             new_file_name = os.path.join(destination_folder, os.path.basename(file_name))
-            shutil.move(file_name, new_file_name)
+            try:
+                shutil.move(file_name, new_file_name)
+                log.info(f'File moved: {file_name} --> {new_file_name}', instant_msg=True)
+            except:
+                log.info(f'File moved error: {file_name} --> {new_file_name}', instant_msg=True)
 
     @staticmethod
     def execute(log, download_folder: str, accommodation_list: AccommodationList, contas_pagas: PaidUtilityBillList) -> Tuple[List[UtilityBillOkResponse], List[UtilityBillErrorResponse], List[UtilityBillErrorResponse], List[UtilityBillDuplicatedResponse], List[UtilityBillIgnoredResponse]]:
