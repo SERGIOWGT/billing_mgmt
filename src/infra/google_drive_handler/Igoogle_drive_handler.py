@@ -12,7 +12,7 @@ class IGoogleDriveHandler(ABC):
         ...
 
     @abstractmethod
-    def upload_file(self, local_file_name: str,  file_name: str, parents: List) -> Any:
+    def upload_file(self, local_file_name: str,  file_name: str, parents: List, mime_type: str='') -> Any:
         ...
 
     @abstractmethod

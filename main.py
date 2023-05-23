@@ -36,7 +36,7 @@ if __name__ == '__main__':
         ApplicationException.when(not os.path.exists(config_path), f'Path does not exist. [{config_path}]')
         app_config_reader = AppConfigurationReader(config_path)
         accommodation_fileid = check_config_session('google_drive_accommodation_fileid')
-        
+
         log.token_execution = app_config_reader.get('telegram_exec_bot_token')
         log.token_warn = app_config_reader.get('telegram_warn_bot_token')
         log.token_error = log.token_execution

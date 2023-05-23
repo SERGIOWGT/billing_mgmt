@@ -9,3 +9,9 @@ python main.py
 
 
 
+scp /Users/sergio/work/Luiza/billing_mgmt/config/config.json sergiowgt@20.12.190.203:/home/sergiowgt/Robot_QQDestino-1.0/config/config.json
+scp /Users/sergio/work/Luiza/billing_mgmt/config/credentials.json sergiowgt@20.12.190.203:/home/sergiowgt/Robot_QQDestino-1.0/config/credentials.json
+
+scp -r sergiowgt@20.12.190.203:/home/sergiowgt/Robot_QQDestino-1.0/output_2023-05-18.12.15.25.xlsx .
+
+output_2023-05-18.12.15.25.xlsx

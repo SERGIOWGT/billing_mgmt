@@ -45,8 +45,8 @@ class GoogleDriveHandler (IGoogleDriveHandler):
 
         return fh.getvalue()
 
-    def upload_file(self, local_file_name: str,  file_name: str, parents=[]):
-        file_metadata = {'name': file_name, 'mimeType': 'application/pdf'}
+    def upload_file(self, local_file_name: str,  file_name: str, parents=[], mimeType='application/pdf'):
+        file_metadata = {'name': file_name, 'mimeType': mimeType}
         if len(parents) > 0:
             file_metadata["parents"] = parents
 

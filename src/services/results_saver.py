@@ -156,7 +156,7 @@ class ResultsSaver:
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute(self, database_folder: str, export_folder: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
+    def execute(self, export_filename: str, database_filename: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
         new_ok_list.sort(key=lambda x: x.utility_bill.concessionaria)
         not_found_list.sort(key=lambda x: x.utility_bill.concessionaria)
         duplicated_list.sort(key=lambda x: x.utility_bill.concessionaria)
@@ -168,25 +168,20 @@ class ResultsSaver:
         df_duplicated = self._create_df_error(duplicated_list)
         df_ignored = self._create_df_ignored(ignored_list)
 
-        now = datetime.now()
-        output_file_name = f'output_{now.strftime("%Y-%m-%d.%H.%M.%S")}.xlsx'
-        output_file_name = os.path.join(export_folder, output_file_name)
-        with pd.ExcelWriter(output_file_name) as writer:
+        with pd.ExcelWriter(export_filename) as writer:
             df_ok.to_excel(writer, sheet_name='Processados', index=False)
             df_nf.to_excel(writer, sheet_name='Sem Alojamentos', index=False)
             df_error.to_excel(writer, sheet_name='Erros', index=False)
             df_duplicated.to_excel(writer, sheet_name='Duplicados', index=False)
             df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
 
-        output_file_name = 'database.xlsx'
-        output_file_name = os.path.join(database_folder, output_file_name)
-        if os.path.exists(output_file_name) is False:
-            with pd.ExcelWriter(output_file_name) as writer:
+        if os.path.exists(database_filename) is False:
+            with pd.ExcelWriter(database_filename) as writer:
                 df_ok.to_excel(writer, sheet_name='Database', index=False)
         else:
             if len(new_ok_list) > 0:
-                book = load_workbook(output_file_name)
-                with pd.ExcelWriter(output_file_name) as writer:
+                book = load_workbook(database_filename)
+                with pd.ExcelWriter(database_filename) as writer:
                     writer.book = book
                     ws = writer.sheets['Database']
 

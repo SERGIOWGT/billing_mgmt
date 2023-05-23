@@ -32,6 +32,7 @@ class App:
     _folder_base_id = ''
     _folder_contabil_id = ''
     _others_folder_base_id = ''
+    _results_folder_id = ''
     _folder_client_id = ''
     _export_folder = ''
     _database_folder = ''
@@ -108,7 +109,7 @@ class App:
             ApplicationException.when(status not in accommodation_status_list, f'O alojamento "{nome_alojamento}" da planilha de Alojamentos esta com status incompativel. [{status}]', self._log)
 
             for id_concessionaria in [x for x in list(ServiceProviderEnum) if x != ServiceProviderEnum.DESCONHECIDO]:
-                nome_concessionaria = str(id_concessionaria).replace('ServiceProviderEnum.', '')
+                nome_concessionaria = str(id_concessionaria.name).replace('ServiceProviderEnum.', '')
                 nome_concessionaria = nome_concessionaria.replace(' ', '')
 
                 conta = row[f'{nome_concessionaria} Contrato'] if f'{nome_concessionaria} Contrato' in column_list else ''
@@ -124,6 +125,7 @@ class App:
                 if cliente or conta or local:
                     list_aux.append(Accommodation(id_concessionaria, status, nome_alojamento, diretorio, nif, cliente, conta, local))
 
+        ApplicationException.when(len(list_aux) == 0, f'A planilha de Alojamentos esta vazia.', self._log)
         self._accommodations = AccommodationList(list_aux)
 
     def _get_except_list(self) -> None:
@@ -230,9 +232,18 @@ class App:
         self._log.info(f'{len(ignored_list)} ignored file(s)', instant_msg=True)
 
     def _export_results(self, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills: PaidUtilityBillList):
+        now = datetime.now()
+        export_filename = f'output_{now.strftime("%Y-%m-%d.%H.%M.%S")}.xlsx'
+        export_filename = os.path.join(self._export_folder, export_filename)
+        database_filename = os.path.join(self._database_folder, 'database.xlsx')
+
         self._log.info('Saving the worksheets', instant_msg=True)
         saver = ResultsSaver(self._log, self._drive)
-        saver.execute(self._database_folder, self._export_folder, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills.count+1)
+        saver.execute(export_filename, database_filename, processed_list, not_found_list, error_list, duplicated_list, ignored_list, processed_utility_bills.count+1)
+
+        self._log.info('Upload results', instant_msg=True)
+        uploader = ResultsUploader(self._log, self._drive)
+        uploader.upload_results(self._results_folder_id, export_filename)
 
     def _handle_exceptions(self, line, exception_data) -> None:
         except_type = exception_data[0]
@@ -270,34 +281,28 @@ class App:
             ApplicationException.when(not os.path.exists(ret), f'Path does not exist. [{ret}]', self._log)
             return ret
 
+        def validate_folder(parent_id, sec_id, sec_name, name):
+            config_folder_id = self._get_config_key(sec_id)
+            config_folder_name = self._get_config_key(sec_name)
+            folder_id = self._drive.find_file(config_folder_name, parent_id)
+            ApplicationException.when(folder_id is None, f'{name} folder not found. [{config_folder_name}]', self._log)
+            ApplicationException.when(config_folder_id != folder_id,
+                                      f'{name} folder found but its id must be the same as the advisor in "{sec_id}". [{config_folder_id}]', self._log)
+
+            return folder_id
+
         self._log.info('Getting the settings from the Accommodation worksheet', instant_msg=True)
         self._dict_config = self._get_config_infos_from_accommodation_file()
         self._log.info('Checking the settings', instant_msg=True)
-        
+
         folder_base_id = self._get_config_key('googledrive.base.folderid')
         if folder_base_id.upper() in ['VAZIO', 'RAIZ']:
             folder_base_id = ''
 
-        self._folder_client_id = self._get_config_key('googledrive.client.folderid')
-        client_folder_name = self._get_config_key('googledrive.client.foldername')
-        folder_client_id = self._drive.find_file(client_folder_name, folder_base_id)
-        ApplicationException.when(folder_client_id is None, f'Client folder not found. [{client_folder_name}]', self._log)
-        ApplicationException.when(folder_client_id != self._folder_client_id,
-                                  f'Client folder found but its id must be the same as the advisor in "googledrive.client.folderid". [{folder_client_id}]', self._log)
-
-        self._folder_contabil_id = self._get_config_key('googledrive.accounting.folderid')
-        contabil_folder_name = self._get_config_key('googledrive.accounting.foldername')
-        folder_contabil_id = self._drive.find_file(contabil_folder_name, folder_base_id)
-        ApplicationException.when(folder_contabil_id is None, f'Accounting folder not found. [{contabil_folder_name}]', self._log)
-        ApplicationException.when(folder_contabil_id != self._folder_contabil_id,
-                                  f'Accounting folder found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_contabil_id}]', self._log)
-
-        self._others_folder_base_id = self._get_config_key('googledrive.otherfiles.folderid')
-        others_folder_name = self._get_config_key('googledrive.otherfiles.foldername')
-        folder_others_id = self._drive.find_file(others_folder_name, folder_base_id)
-        ApplicationException.when(folder_others_id is None, f'Other files folder not found [{others_folder_name}]', self._log)
-        ApplicationException.when(folder_others_id != self._others_folder_base_id,
-                                  f'Other files folder found but its id must be the same as the advisor in "googledrive.accounting.folderid". [{folder_others_id}]', self._log)
+        self._folder_client_id = validate_folder(folder_base_id, 'googledrive.client.folderid', 'googledrive.client.foldername', 'Client')
+        self._folder_contabil_id = validate_folder(folder_base_id, 'googledrive.accounting.folderid', 'googledrive.accounting.foldername', 'Accounting')
+        self._others_folder_base_id = validate_folder(folder_base_id, 'googledrive.otherfiles.folderid', 'googledrive.otherfiles.foldername', 'Other files')
+        self._results_folder_id = validate_folder(folder_base_id, 'googledrive.results.folderid', 'googledrive.results.foldername', 'Results')
 
         base_folder = self._get_config_key('localbase.folder')
         ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', self._log)

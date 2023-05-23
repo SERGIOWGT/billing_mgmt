@@ -1,3 +1,4 @@
+import os
 import time
 from dataclasses import dataclass
 
@@ -44,6 +45,9 @@ class ResultsUploader:
             file = self._drive.upload_file(original_file_name, google_file_name, [parent_id])
 
         return file
+
+    def _create_excel_file(self, original_file_name: str, google_file_name: str, parent_id: str) -> Any:
+        return self._drive.upload_file(original_file_name, google_file_name, [parent_id], 'application/vnd.ms-excel')
 
     def upload_ok_list(self, folder_base_id: str, folder_contabil_id: str, ok_list: List[UtilityBillOkResponse]) -> None:
         for resp in ok_list:
@@ -98,3 +102,8 @@ class ResultsUploader:
         self._upload_error_list(folder_others_base_id, error_list)
         self._upload_duplicate_list(folder_others_base_id, duplicated_list)
         self._upload_ignored_list(folder_others_base_id, ignored_list)
+
+    def upload_results(self, folder_results_id: str, export_filename: str) -> None:
+        file_name = os.path.basename(export_filename)
+        exports_folder_id = self._create_folder('exports', folder_results_id)
+        _ = self._create_excel_file(original_file_name=export_filename, google_file_name=file_name, parent_id=exports_folder_id)
