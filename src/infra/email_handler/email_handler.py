@@ -9,7 +9,7 @@ import os
 import quopri
 import re
 from typing import List
-import uuid
+import random
 
 from .Imail_handler import IEmailHandler
 from src.infra.exception_handler import ApplicationException
@@ -104,7 +104,7 @@ class EmailHandler(IEmailHandler):
         list_file = []
         email_message = self.fetch_email(message_uid)
         now = datetime.datetime.now()
-        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S").replace('-', '_')
+        timestamp = now.strftime("%Y%m%d_%H%M%S").replace('-', '_')
 
         for part in email_message.walk():
             if part.get_content_maintype() == 'multipart':
@@ -112,15 +112,9 @@ class EmailHandler(IEmailHandler):
             if part.get('Content-Disposition') is None:
                 continue
 
-            guid = uuid.uuid4()
-            att_file_name = f"{timestamp}_{guid}.pdf"
-            #att_file_name = part.get_filename()
-            #if (att_file_name):
-            #    att_file_name = self.encoded_file_name_2_text(att_file_name)
-            #    att_file_name = re.sub("[:\\/\s]", "_", att_file_name)
-            #else:
-            #    att_file_name = 'unkown_file_name'
-
+            randomic_number = random.randint(1, 1000)
+            randomic_formated = "{:04d}".format(randomic_number)
+            att_file_name = f"{timestamp}_{randomic_formated}.pdf"
             if bool(att_file_name):
                 download_path = f"{download_folder}/{att_file_name}"
                 if not os.path.isfile(download_path) :

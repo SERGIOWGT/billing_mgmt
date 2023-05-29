@@ -34,6 +34,7 @@ class App:
     _others_folder_base_id = ''
     _results_folder_id = ''
     _folder_client_id = ''
+    _work_folder_id = ''
     _export_folder = ''
     _database_folder = ''
     _download_folder = ''
@@ -45,7 +46,7 @@ class App:
     _accommodations = ''
     _except_list = ''
 
-    def __init__(self, accommodation_file_id: str, drive: IGoogleDriveHandler, log):
+    def __init__(self, temp_folder, accommodation_file_id: str, drive: IGoogleDriveHandler, log):
         ApplicationException.when(log is None, 'Log não iniciado.')
         ApplicationException.when(drive is None, 'Google Drive não iniciado.', log)
         ApplicationException.when(accommodation_file_id == '', 'Chave "accommodation_file_id" não encontrada no arquivo de configuração.', log)
@@ -90,7 +91,7 @@ class App:
 
     def _get_accommodations(self) -> AccommodationList:
         sheet_name = 'Alojamentos'
-        stream_file = self._drive.get_excel_file(self._accommodation_file_id)
+        stream_file = self._drive.get_file(self._accommodation_file_id)
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
@@ -130,7 +131,7 @@ class App:
 
     def _get_except_list(self) -> None:
         sheet_name = 'Excecoes'
-        stream_file = self._drive.get_excel_file(self._accommodation_file_id)
+        stream_file = self._drive.get_file(self._accommodation_file_id)
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
@@ -175,9 +176,17 @@ class App:
 
         return email
 
-    def _download_emails(self, email: IEmailHandler) -> None:
+    def _get_upload_email_files(self, email: IEmailHandler) -> None:
         self._log.info('Downloading PDF files from emails', instant_msg=True)
-        _, num_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        _, all_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        for file_name in all_files:
+            complete_filename = os.path.join(self._download_folder, file_name)
+            self._log.info(f'Uploading email file {file_name}', instant_msg=True)
+            self._drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[self._work_folder_id])
+            self._log.info(f'Removing file {file_name}', instant_msg=True)
+            os.remove(complete_filename)
+
+        num_files = len(all_files)
         if num_files == 0:
             self._log.info('No files downloaded', instant_msg=True, warn=True)
         elif num_files == 1:
@@ -197,7 +206,7 @@ class App:
 
     def _handle_downloaded_files(self, processed_utility_bills) -> None:
         self._log.info('Processing downloaded files', instant_msg=True)
-        return FilesHandler.execute(self._log, self._download_folder, self._accommodations, processed_utility_bills)
+        return FilesHandler.execute(self._log, self._drive, self._work_folder_id, self._download_folder, self._accommodations, processed_utility_bills)
 
     def _process_exceptions(self, processed_list: List[UtilityBillBase]) -> None:
         self._log.info('Processing the exceptions', instant_msg=True)
@@ -262,7 +271,7 @@ class App:
 
     def _get_config_infos_from_accommodation_file(self) -> dict:
         sheet_name = 'Config'
-        stream_file = self._drive.get_excel_file(self._accommodation_file_id)
+        stream_file = self._drive.get_file(self._accommodation_file_id)
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
@@ -299,18 +308,19 @@ class App:
         if folder_base_id.upper() in ['VAZIO', 'RAIZ']:
             folder_base_id = ''
 
-        self._folder_client_id = validate_folder(folder_base_id, 'googledrive.client.folderid', 'googledrive.client.foldername', 'Client')
-        self._folder_contabil_id = validate_folder(folder_base_id, 'googledrive.accounting.folderid', 'googledrive.accounting.foldername', 'Accounting')
-        self._others_folder_base_id = validate_folder(folder_base_id, 'googledrive.otherfiles.folderid', 'googledrive.otherfiles.foldername', 'Other files')
-        self._results_folder_id = validate_folder(folder_base_id, 'googledrive.results.folderid', 'googledrive.results.foldername', 'Results')
+        #self._folder_client_id = validate_folder(folder_base_id, 'googledrive.client.folderid', 'googledrive.client.foldername', 'Client')
+        #self._folder_contabil_id = validate_folder(folder_base_id, 'googledrive.accounting.folderid', 'googledrive.accounting.foldername', 'Accounting')
+        #self._others_folder_base_id = validate_folder(folder_base_id, 'googledrive.otherfiles.folderid', 'googledrive.otherfiles.foldername', 'Other files')
+        #self._results_folder_id = validate_folder(folder_base_id, 'googledrive.results.folderid', 'googledrive.results.foldername', 'Results')
+        self._work_folder_id = validate_folder(folder_base_id, 'googledrive.work.folderid', 'googledrive.work.foldername', 'Work')
 
-        base_folder = self._get_config_key('localbase.folder')
-        ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', self._log)
+        #base_folder = self._get_config_key('localbase.folder')
+        #ApplicationException.when(not os.path.exists(base_folder), f'Path does not exist. [{base_folder}]', self._log)
 
-        self._download_folder = get_and_validate_folder(base_folder, 'downloads')
-        self._export_folder = get_and_validate_folder(base_folder, 'exports')
-        self._database_folder = get_and_validate_folder(base_folder, 'database')
-        ApplicationException.when(not os.path.exists(self._database_folder), f'Path does not exist. [{self._database_folder}]', self._log)
+        #self._download_folder = get_and_validate_folder(base_folder, 'downloads')
+        #self._export_folder = get_and_validate_folder(base_folder, 'exports')
+        #self._database_folder = get_and_validate_folder(base_folder, 'database')
+        #ApplicationException.when(not os.path.exists(self._database_folder), f'Path does not exist. [{self._database_folder}]', self._log)
 
         self._smtp_server = self._get_config_key('gmail.imap.server')
         self._user = self._get_config_key('gmail.user')
@@ -338,7 +348,6 @@ class App:
 
     def _check_residence_change(self, processed_list: List[UtilityBillOkResponse]) -> None:
         ...
-
     def _check_missing_utility_bills(self) -> None:
         time.sleep(5)
         self._log.info('Downloading the paid bills from the historical worksheet', instant_msg=True)
@@ -366,8 +375,9 @@ class App:
         self._get_and_validate_config()
 
         processed_utility_bills = self._get_processed_utility_bills()
-        email = self._get_email_handler()
-        self._download_emails(email)
+        #email = self._get_email_handler()
+        #self._get_upload_email_files(email)
+
         processed_list, not_found_list, error_list, duplicated_list, ignored_list = self._handle_downloaded_files(processed_utility_bills)
         num_files = len(processed_list) + len(not_found_list) + len(error_list) + len(duplicated_list) + len(ignored_list)
         if num_files == 0:

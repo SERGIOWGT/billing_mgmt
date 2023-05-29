@@ -1,0 +1,6 @@
+1- Baixa os arquivos pdf do email
+    1.1- Para cada email com pds no inbox
+    1.2-    Baixa os pdfs para o diretorio download do robot
+    1.3-    Move para o folder do email processados
+
+    

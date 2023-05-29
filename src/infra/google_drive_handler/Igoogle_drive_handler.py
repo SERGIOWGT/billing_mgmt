@@ -4,7 +4,11 @@ from abc import ABC, abstractmethod
 class IGoogleDriveHandler(ABC):
 
     @abstractmethod
-    def get_excel_file(self, file_id: str) -> bytes:
+    def get_file(self, file_id: str) -> bytes:
+        ...
+
+    @abstractmethod
+    def get_files(self, folder_id: str) -> bytes:
         ...
 
     @abstractmethod
