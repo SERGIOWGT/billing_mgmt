@@ -226,7 +226,8 @@ class App:
 
     def _handle_downloaded_files(self, processed_utility_bills) -> None:
         self._log.info('Processing downloaded files', instant_msg=True)
-        self._processed_list, self._not_found_list, self._error_list,self._duplicated_list, self._ignored_list = FilesHandler.execute(self._log, self._download_folder, self._accommodations, processed_utility_bills)
+        self._processed_list, self._not_found_list, self._error_list,self._duplicated_list, self._ignored_list = \
+                FilesHandler.execute(self._log, self._drive, self._work_folder_id, self._accommodations, processed_utility_bills)
 
     def _process_exceptions(self) -> None:
         self._log.info('Processing the exceptions', instant_msg=True)

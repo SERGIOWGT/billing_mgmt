@@ -30,7 +30,7 @@ class FilesHandler:
         error_list: List[UtilityBillErrorResponse] = []
         duplicated_list: List[UtilityBillDuplicatedResponse] = []
         ignored_list: List[UtilityBillIgnoredResponse] = []
-        
+
         files_in_drive = drive.get_files(work_folder_id)
         files = files_in_drive['files']
         for file in files:
@@ -38,14 +38,9 @@ class FilesHandler:
             file_name = file['name']
             complete_file_name = file_name  # SO PARA MANTER A COMPATIBILIDADE
             log.info(f'Getting file: {file_name}', instant_msg=True)
-            file_content = drive.get_file(file_id)
 
-            try:
-                all_text = PdfExtractorHandler().get_text(complete_file_name)
-            except Exception as erro:
-                ignored_list.append(UtilityBillIgnoredResponse(error_type='10', google_file_id='', file_name=file_name, complete_file_name=complete_file_name))
-                continue
-            
+            file_content = drive.get_file(file_id)
+            all_text = PdfExtractorHandler().get_text(file_content)
             conta_consumo = UtilityBillFactory().execute(all_text)
             if (conta_consumo):
                 try:
@@ -75,7 +70,6 @@ class FilesHandler:
                             not_found_list.append(UtilityBillErrorResponse(error_type='7', google_file_id='', file_name=file_name, complete_file_name=complete_file_name, utility_bill=conta_consumo))
                     else:
                         error_list.append(UtilityBillErrorResponse(error_type='6', google_file_id='', file_name=file_name, complete_file_name=complete_file_name, utility_bill=conta_consumo))
-                
                 except Exception:
                     error_list.append(UtilityBillErrorResponse(error_type='5', google_file_id='', file_name=file_name, complete_file_name=complete_file_name, utility_bill=conta_consumo))
             else:
