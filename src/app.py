@@ -331,6 +331,7 @@ class App:
         self._folder_contabil_id = validate_folder(folder_base_id, 'googledrive.accounting.folderid', 'googledrive.accounting.foldername', 'Accounting')
         self._others_folder_base_id = validate_folder(folder_base_id, 'googledrive.otherfiles.folderid', 'googledrive.otherfiles.foldername', 'Other files')
         self._results_folder_id = validate_folder(folder_base_id, 'googledrive.results.folderid', 'googledrive.results.foldername', 'Results')
+        self._work_folder_id = validate_folder(folder_base_id, 'googledrive.work.folderid', 'googledrive.work.foldername', 'Work')
 
         # self._base_folder = self._get_config_key('localbase.folder')
         ApplicationException.when(not os.path.exists(self._base_folder), f'Path does not exist. [{self._base_folder}]', self._log)
