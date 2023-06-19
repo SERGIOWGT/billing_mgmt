@@ -30,10 +30,15 @@ class FilesHandler:
         error_list: List[UtilityBillErrorResponse] = []
         duplicated_list: List[UtilityBillDuplicatedResponse] = []
         ignored_list: List[UtilityBillIgnoredResponse] = []
-
-        for file_name in [f.upper() for f in os.listdir(download_folder) if os.path.isfile(os.path.join(download_folder, f)) and f.upper().endswith('.PDF') == True]:
-            complete_file_name = os.path.join(download_folder, file_name)
-            log.info(f'Processing file: {file_name}', instant_msg=True)
+        
+        files_in_drive = drive.get_files(work_folder_id)
+        files = files_in_drive['files']
+        for file in files:
+            file_id = file['id']
+            file_name = file['name']
+            complete_file_name = file_name  # SO PARA MANTER A COMPATIBILIDADE
+            log.info(f'Getting file: {file_name}', instant_msg=True)
+            file_content = drive.get_file(file_id)
 
             try:
                 all_text = PdfExtractorHandler().get_text(complete_file_name)
