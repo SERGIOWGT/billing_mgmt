@@ -430,4 +430,3 @@ class App:
         self._export_results(processed_utility_bills)
         self._clean_directories()
         self._check_missing_utility_bills()
-        email.logout()
