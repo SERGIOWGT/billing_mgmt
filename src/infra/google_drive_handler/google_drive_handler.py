@@ -93,5 +93,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
     def get_service(self):
         return self._drive
 
+    def get_files(self, folder_id):
+        return self.get_service().files().list(q="'" + folder_id + "' in parents", fields="files(id, name)").execute()
 
 #drive = GoogleDriveHandler('./credentials')
