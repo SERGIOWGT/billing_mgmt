@@ -24,6 +24,16 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         http = credentials.authorize(Http())
         self._drive = discovery.build('drive', 'v3', http=http)
 
+    def get_file(self, file_id: str):
+        request = self.get_service().files().get_media(fileId=file_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while done is False:
+                _, done = downloader.next_chunk()
+
+        return fh.getvalue()
+
     def get_excel_file(self, file_id: str):
         request = self.get_service().files().get_media(fileId=file_id)
         fh = io.BytesIO()
