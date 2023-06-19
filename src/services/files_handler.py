@@ -24,7 +24,7 @@ class FilesHandler:
                 log.info(f'File moved error: {file_name} --> {new_file_name}', instant_msg=True)
 
     @staticmethod
-    def execute(log, download_folder: str, accommodation_list: AccommodationList, contas_pagas: PaidUtilityBillList) -> Tuple[List[UtilityBillOkResponse], List[UtilityBillErrorResponse], List[UtilityBillErrorResponse], List[UtilityBillDuplicatedResponse], List[UtilityBillIgnoredResponse]]:
+    def execute(log, drive, work_folder_id, accommodation_list: AccommodationList, contas_pagas: PaidUtilityBillList) -> Tuple[List[UtilityBillOkResponse], List[UtilityBillErrorResponse], List[UtilityBillErrorResponse], List[UtilityBillDuplicatedResponse], List[UtilityBillIgnoredResponse]]:
         processed_list = []
         not_found_list: List[UtilityBillErrorResponse] = []
         error_list: List[UtilityBillErrorResponse] = []
