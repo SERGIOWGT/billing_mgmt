@@ -100,11 +100,11 @@ class EmailHandler(IEmailHandler):
 
         return byte_string.decode(charset)
 
-    def get_save_attachments(self, message_uid: int, download_folder: str):
+    def get_save_attachments(self, message_uid: int, download_folder: str, recv_date: datetime):
         list_file = []
         email_message = self.fetch_email(message_uid)
-        now = datetime.datetime.now()
-        timestamp = now.strftime("%Y%m%d_%H%M%S").replace('-', '_')
+        timestamp = recv_date.strftime("%Y-%m-%d_%H-%M-%S").replace('-', '_')
+        file_number = random.randint(0, 1000)
 
         for part in email_message.walk():
             if part.get_content_maintype() == 'multipart':
@@ -112,16 +112,25 @@ class EmailHandler(IEmailHandler):
             if part.get('Content-Disposition') is None:
                 continue
 
-            randomic_number = random.randint(1, 1000)
-            randomic_formated = "{:04d}".format(randomic_number)
-            att_file_name = f"{timestamp}_{randomic_formated}.pdf"
-            if bool(att_file_name):
-                download_path = f"{download_folder}/{att_file_name}"
-                if not os.path.isfile(download_path) :
-                    with open(download_path, 'wb') as file:
-                        file.write(part.get_payload(decode=True))
+            att_file_name = f"{timestamp}_{file_number}.pdf"
+            file_number = file_number + 1
+            #att_file_name = part.get_filename()
+            #if (att_file_name):
+            #    att_file_name = self.encoded_file_name_2_text(att_file_name)
+            #    att_file_name = re.sub("[:\\/\s]", "_", att_file_name)
+            #else:
+            #    att_file_name = 'unkown_file_name'
 
-                list_file.append(att_file_name)
+            try:
+                if bool(att_file_name):
+                    download_path = f"{download_folder}/{att_file_name}"
+                    if not os.path.isfile(download_path) :
+                        with open(download_path, 'wb') as file:
+                            file.write(part.get_payload(decode=True))
+
+                    list_file.append(att_file_name)
+            except:
+                ...
 
         return list_file
 

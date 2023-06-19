@@ -1,7 +1,9 @@
 {
+    "work_directory":"/Users/sergio/work/Luiza/billing_mgmt/",
     "log_file_name": "logs/log.txt",
     "_google_drive_accommodation_fileid": "1jJuCnxv0yJHIk1tg-sYCiA6VDvOXc3vq",
-    "google_drive_accommodation_fileid": "1l9a9iO3W2i_eDXnGhSDH01Yg-TYPZWdl",
+    "_sergiowgt_teste_google_drive_accommodation_fileid": "1l9a9iO3W2i_eDXnGhSDH01Yg-TYPZWdl",
+    "google_drive_accommodation_fileid":"1DFzu_vr-DklP0_KcUicLeDycnhDmCaTK",
     "telegram_exec_bot_token":  "6292020167:AAF9X9jUsThCvDBS_x5sNWu24zY6xq2Vioc",
     "telegram_exec_bot_chats_id": [
         "1562103759",  

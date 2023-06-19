@@ -34,19 +34,19 @@ class ApplicationLogHandler():
     def info(self, msg, instant_msg: bool = False, warn=False):
         self._log.info(msg)
         
-        if self.token_execution:
-            if instant_msg:
-                self._send_telegram(self.token_execution,  self.list_execution_chat_id, msg)
-            if warn:
-                self._send_telegram(self.token_warn, self.list_warn_chat_id , msg)
+        #if self.token_execution:
+        #    if instant_msg:
+        #        self._send_telegram(self.token_execution,  self.list_execution_chat_id, msg)
+        #    if warn:
+        #        self._send_telegram(self.token_warn, self.list_warn_chat_id , msg)
 
 
     def error(self, msg, instant_msg: bool = True):
         self._log.error(msg)
-        if self.token_execution and instant_msg:
-                self._send_telegram(self.token_error, self.list_execution_chat_id, msg)
+       # if self.token_execution and instant_msg:
+        #        self._send_telegram(self.token_error, self.list_execution_chat_id, msg)
 
     def warning(self, msg, instant_msg: bool = True):
         self._log.error(msg)
-        if self.token_execution and instant_msg:
-                self._send_telegram(self.token_warn, self.list_warn_chat_id, msg)
+        #if self.token_execution and instant_msg:
+        #        self._send_telegram(self.token_warn, self.list_warn_chat_id, msg)

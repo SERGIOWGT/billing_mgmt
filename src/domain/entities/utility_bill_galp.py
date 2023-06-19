@@ -8,7 +8,7 @@ class UtilityBillGalp(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
         self.concessionaria = ServiceProviderEnum.GALP
-        self.tipo_servico = ServiceTypeEnum.AGUA
+        self.tipo_servico = ServiceTypeEnum.LUZ
 
     def _adjust_periodo_faturacao(self):
         ret = ''

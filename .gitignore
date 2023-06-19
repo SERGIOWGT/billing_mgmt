@@ -1,6 +1,7 @@
 .ambiente_virtual
 pylintrc
 downloads
+downloads-2
 
 # Flask stuff:
 instance/

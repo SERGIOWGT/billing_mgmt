@@ -7,7 +7,7 @@ class UtilityBillEDP(UtilityBillBase):
     def __init__(self):
         super().__init__(self)
         self.concessionaria = ServiceProviderEnum.EDP
-        self.tipo_servico = ServiceTypeEnum.TELECOM
+        self.tipo_servico = ServiceTypeEnum.LUZ
 
     def _conv_periodo_faturacao(self, value: str):
         ret = ''
