@@ -13,7 +13,7 @@ class AttachmentDownloader:
         for message_uid in messages_id:
                 (subject, sender, rec_date, has_attachments) = email.get_email_infos(message_uid)
                 if (has_attachments):
-                    file_list = email.get_save_attachments(message_uid, path_to_save)
+                    file_list = email.get_save_attachments(message_uid, path_to_save, parsedate_to_datetime(rec_date))
 
                     num_emails += 1
                     #email.move(message_uid, output_email_folder)
@@ -22,6 +22,7 @@ class AttachmentDownloader:
                         log.info(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.', instant_msg=True)
 
                     all_files.extend(file_list)
+                    break
 
         return num_emails, all_files
     

@@ -34,6 +34,7 @@ class App:
     _others_folder_base_id = ''
     _results_folder_id = ''
     _folder_client_id = ''
+    _work_folder_id = ''
     _export_folder = ''
     _base_folder = ''
     _database_folder = ''
