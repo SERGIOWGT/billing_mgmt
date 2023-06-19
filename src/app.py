@@ -189,9 +189,19 @@ class App:
 
         return email
 
-    def _download_emails(self, email: IEmailHandler) -> None:
+    def _get_upload_email_files(self) -> None:
         self._log.info('Downloading PDF files from emails', instant_msg=True)
-        _, num_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        email = self._get_email_handler()
+        _, all_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        for file_name in all_files:
+            complete_filename = os.path.join(self._download_folder, file_name)
+            self._log.info(f'Uploading email file {file_name}', instant_msg=True)
+            self._drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[self._work_folder_id])
+            self._log.info(f'Removing file {file_name}', instant_msg=True)
+            os.remove(complete_filename)
+        email.logout()
+        
+        num_files = len(all_files)
         if num_files == 0:
             self._log.info('No files downloaded', instant_msg=True, warn=True)
         elif num_files == 1:
@@ -403,8 +413,8 @@ class App:
         self._get_and_validate_config()
 
         processed_utility_bills = self._get_processed_utility_bills()
-        email = self._get_email_handler()
-        self._download_emails(email)
+        self._get_upload_email_files()
+        
         self._handle_downloaded_files(processed_utility_bills)
         num_files = len(self._processed_list) + len(self._not_found_list) + len(self._error_list) + len(self._duplicated_list) + len(self._ignored_list)
         if num_files == 0:
