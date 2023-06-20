@@ -4,6 +4,7 @@ from src.domain.entities.base.base_utility_bill import UtilityBillBase
 
 @dataclass
 class UtilityBillBaseResponse():
+    email_file_id: str = ''
     google_file_id: str = ''
     file_name: str = ''
     complete_file_name: str = ''

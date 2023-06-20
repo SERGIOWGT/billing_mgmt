@@ -34,6 +34,7 @@ class App:
     _others_folder_base_id = ''
     _results_folder_id = ''
     _folder_client_id = ''
+    _work_folder_id = ''
     _export_folder = ''
     _base_folder = ''
     _database_folder = ''
@@ -189,9 +190,19 @@ class App:
 
         return email
 
-    def _download_emails(self, email: IEmailHandler) -> None:
+    def _get_upload_email_files(self) -> None:
         self._log.info('Downloading PDF files from emails', instant_msg=True)
-        _, num_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        email = self._get_email_handler()
+        _, all_files = AttachmentDownloader.execute(self._download_folder, self._input_email_folder, self._output_email_folder, self._log, email)
+        for file_name in all_files:
+            complete_filename = os.path.join(self._download_folder, file_name)
+            self._log.info(f'Uploading email file {file_name}', instant_msg=True)
+            self._drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[self._work_folder_id])
+            self._log.info(f'Removing file {file_name}', instant_msg=True)
+            os.remove(complete_filename)
+        email.logout()
+
+        num_files = len(all_files)
         if num_files == 0:
             self._log.info('No files downloaded', instant_msg=True, warn=True)
         elif num_files == 1:
@@ -199,24 +210,22 @@ class App:
         else:
             self._log.info(f'{num_files} files downloaded', instant_msg=True, warn=True)
 
-    def _clean_directories(self):
-        self._log.info('Cleaning up directories', instant_msg=True)
-        destination_folder = os.path.join(self._download_folder, 'processados')
-        list_2_move = [conta.complete_file_name for conta in self._processed_list]
-        FilesHandler.move_files(self._log, destination_folder, list_2_move)
+    def _clean_email_folder(self):
+        self._log.info('Cleaning up email folder', instant_msg=True)
 
-        destination_folder = os.path.join(self._download_folder, 'ignorados')
-        list_2_move = [conta.complete_file_name for conta in self._ignored_list]
-        FilesHandler.move_files(self._log, destination_folder, list_2_move)
+        for file in self._processed_list:
+            self._drive.delete_file(file_id=file.email_file_id)
 
-        destination_folder = os.path.join(self._download_folder, 'duplicados')
-        list_2_move = [conta.complete_file_name for conta in self._duplicated_list]
-        FilesHandler.move_files(self._log, destination_folder, list_2_move)
+        for file in self._ignored_list:
+            self._drive.delete_file(file_id=file.email_file_id)
+
+        for file in self._duplicated_list:
+            self._drive.delete_file(file_id=file.email_file_id)
 
     def _handle_downloaded_files(self, processed_utility_bills) -> None:
         self._log.info('Processing downloaded files', instant_msg=True)
-        self._processed_list, self._not_found_list, self._error_list, self._duplicated_list, self._ignored_list = FilesHandler.execute(
-            self._log, self._download_folder, self._accommodations, processed_utility_bills)
+        self._processed_list, self._not_found_list, self._error_list, self._duplicated_list, self._ignored_list = \
+            FilesHandler.execute(self._log, self._drive, self._work_folder_id, self._accommodations, processed_utility_bills)
 
     def _process_exceptions(self) -> None:
         self._log.info('Processing the exceptions', instant_msg=True)
@@ -322,6 +331,7 @@ class App:
         self._folder_contabil_id = validate_folder(folder_base_id, 'googledrive.accounting.folderid', 'googledrive.accounting.foldername', 'Accounting')
         self._others_folder_base_id = validate_folder(folder_base_id, 'googledrive.otherfiles.folderid', 'googledrive.otherfiles.foldername', 'Other files')
         self._results_folder_id = validate_folder(folder_base_id, 'googledrive.results.folderid', 'googledrive.results.foldername', 'Results')
+        self._work_folder_id = validate_folder(folder_base_id, 'googledrive.work.folderid', 'googledrive.work.foldername', 'Work')
 
         # self._base_folder = self._get_config_key('localbase.folder')
         ApplicationException.when(not os.path.exists(self._base_folder), f'Path does not exist. [{self._base_folder}]', self._log)
@@ -402,10 +412,9 @@ class App:
     def execute(self):
         self._log.info('Start of the App.execute routine', instant_msg=True)
         self._get_and_validate_config()
-
+        self._get_upload_email_files()
+        
         processed_utility_bills = self._get_processed_utility_bills()
-        email = self._get_email_handler()
-        self._download_emails(email)
         self._handle_downloaded_files(processed_utility_bills)
         num_files = len(self._processed_list) + len(self._not_found_list) + len(self._error_list) + len(self._duplicated_list) + len(self._ignored_list)
         if num_files == 0:
@@ -419,6 +428,5 @@ class App:
         self._process_exceptions()
         self._upload_files()
         self._export_results(processed_utility_bills)
-        self._clean_directories()
+        self._clean_email_folder()
         self._check_missing_utility_bills()
-        email.logout()

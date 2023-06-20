@@ -106,4 +106,11 @@ class GoogleDriveHandler (IGoogleDriveHandler):
     def get_files(self, folder_id):
         return self.get_service().files().list(q="'" + folder_id + "' in parents", fields="files(id, name)").execute()
 
+    def copy_file(self, file_id, folder_id, file_name):
+        return self.get_service().files().copy(fileId=file_id, body={"parents": [folder_id], 'name': file_name}).execute()
+
+    def delete_file(self, file_id):
+        return self.get_service().files().delete(fileId=file_id).execute()
+
+
 #drive = GoogleDriveHandler('./credentials')

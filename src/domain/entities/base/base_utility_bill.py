@@ -212,13 +212,12 @@ class UtilityBillBase:
         _alojamento = self.id_alojamento
 
         if (self.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO):
-            part_name = self.dt_vencimento.strftime("%Y.%m.%d")
+            part_name = self.dt_vencimento.strftime("%Y_%m_%d")
         else:
             if self.dt_emissao:
-                part_name = self.dt_emissao.strftime("%Y.%m.%d")
+                part_name = self.dt_emissao.strftime("%Y_%m_%d")
             else:
-                print('dt_emissao',  self.dt_emissao)
-                part_name = datetime.datetime.now().strftime("%Y.%m.%d")
+                part_name = datetime.datetime.now().strftime("%Y_%m_%d")
 
             if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
                 part_name += 'NC'

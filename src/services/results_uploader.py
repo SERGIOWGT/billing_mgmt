@@ -20,6 +20,7 @@ class ResultsUploader:
         self._drive = drive
 
     def _create_folder(self, name, parent_id) -> str:
+        
         folder_id = self._drive.find_file(name, parent_id)
         if folder_id:
             return folder_id
@@ -33,6 +34,19 @@ class ResultsUploader:
             time.sleep(3)
 
         return new_parent_id
+
+    def _copy_file(self, file_id, folder_id, file_name):
+        file_id_searched = ''
+        try:
+            file_id_searched = self._drive.find_file(file_name, folder_id)
+        except:
+            ...
+
+        if (file_id_searched):
+            self._drive.delete_file(file_id=file_id_searched)
+
+        return self._drive.copy_file(file_id, folder_id, file_name)
+
 
     def _create_file(self, original_file_name: str, google_file_name: str, parent_id: str) -> Any:
         try:
@@ -62,14 +76,16 @@ class ResultsUploader:
 
             dir_name = data_base.strftime('%Y_%m')
             date_folder_id = self._create_folder(dir_name, folder_id)
-            self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google}', instant_msg=True)
-            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=date_folder_id)
+
+            google_file_name = resp.utility_bill.nome_arquivo_google
+            self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google}', instant_msg=True)
+            file = self._copy_file(file_id=resp.email_file_id, folder_id=date_folder_id, file_name=google_file_name)
+
             resp.google_file_id = file["id"]
             if resp.utility_bill.is_qualquer_destino:
-                self._log.info(f'Uploading file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
-
+                self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
                 folder_id = self._create_folder(dir_name, folder_contabil_id)
-                file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.utility_bill.nome_arquivo_google, parent_id=folder_id)
+                file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_id, file_name=google_file_name)
 
         return
 
@@ -77,7 +93,8 @@ class ResultsUploader:
         self._log.info('Uploading error files - duplicates', instant_msg=True)
         for resp in dupl_list:
             self._log.info(f'Uploading file {resp.file_name}', instant_msg=True)
-            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
+            #file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
+            file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_others_base_id, file_name=resp.complete_file_name)
             resp.google_file_id = file["id"]
         return
 
@@ -85,7 +102,8 @@ class ResultsUploader:
         self._log.info('Uploading error files', instant_msg=True)
         for resp in error_list:
             self._log.info(f'Uploading file {resp.file_name}', instant_msg=True)
-            file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
+            #file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
+            file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_others_base_id, file_name=resp.complete_file_name)
             resp.google_file_id = file["id"]
         return
 
@@ -93,7 +111,8 @@ class ResultsUploader:
         self._log.info('Uploading Ignored files', instant_msg=True)
         for conta in list:
             self._log.info(f'Uploading file {conta.file_name}', instant_msg=True)
-            file = self._create_file(original_file_name=conta.complete_file_name, google_file_name=conta.file_name, parent_id=folder_others_base_id)
+            #file = self._create_file(original_file_name=conta.complete_file_name, google_file_name=conta.file_name, parent_id=folder_others_base_id)
+            file = self._copy_file(file_id=conta.email_file_id, folder_id=folder_others_base_id, file_name=conta.complete_file_name)
             conta.google_file_id = file["id"]
 
     def upload_other_list(self, folder_others_base_id: str, not_found_list: List[UtilityBillBase], error_list: List[UtilityBillBase], \
