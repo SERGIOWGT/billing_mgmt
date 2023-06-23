@@ -39,11 +39,11 @@ if __name__ == '__main__':
         app_config_reader = AppConfigurationReader(config_path)
         accommodation_fileid = check_config_session('google_drive_accommodation_fileid')
 
-        log.token_execution = app_config_reader.get('telegram_exec_bot_token')
-        log.token_warn = app_config_reader.get('telegram_warn_bot_token')
+        # log.token_execution = app_config_reader.get('telegram_exec_bot_token')
+        # log.token_warn = app_config_reader.get('telegram_warn_bot_token')
         log.token_error = log.token_execution
-        log.list_execution_chat_id = app_config_reader.get('telegram_exec_bot_chats_id')
-        log.list_warn_chat_id = app_config_reader.get('telegram_warn_bot_chats_id')
+        # log.list_execution_chat_id = app_config_reader.get('telegram_exec_bot_chats_id')
+        # log.list_warn_chat_id = app_config_reader.get('telegram_warn_bot_chats_id')
         work_directory = app_config_reader.get('work_directory')
 
         log.info('App started', instant_msg=True, warn=True)

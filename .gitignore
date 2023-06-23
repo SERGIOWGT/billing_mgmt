@@ -16,6 +16,7 @@ src/__pycache__/
 
 # ignora os arquivos .env
 .env
+.venv
 
 temp/*.*
 exports/
