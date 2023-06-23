@@ -413,7 +413,7 @@ class App:
         self._log.info('Start of the App.execute routine', instant_msg=True)
         self._get_and_validate_config()
         self._get_upload_email_files()
-        
+
         processed_utility_bills = self._get_processed_utility_bills()
         self._handle_downloaded_files(processed_utility_bills)
         num_files = len(self._processed_list) + len(self._not_found_list) + len(self._error_list) + len(self._duplicated_list) + len(self._ignored_list)

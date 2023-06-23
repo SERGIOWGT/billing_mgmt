@@ -11,3 +11,4 @@ class ServiceProviderEnum(IntEnum):
     ALTICE_MEO = 6
     NOS = 7
     VODAFONE = 8
+    GOLDEN_ENERGY = 9
