@@ -11,7 +11,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
     _SCOPE = 'https://www.googleapis.com/auth/drive'
     _drive = None
 
-    def __init__ (self, directory: str):
+    def __init__(self, directory: str):
         credentials_file_path = f'{directory}/credentials.json'
         clientsecret_file_path = f'{directory}/client_secret.json'
         store = file.Storage(credentials_file_path)
@@ -30,7 +30,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
-                _, done = downloader.next_chunk()
+            _, done = downloader.next_chunk()
 
         return fh.getvalue()
 
@@ -46,7 +46,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
 
     def get_google_sheets_file(self, file_id: str):
         request = self.get_service().files().export_media(fileId=file_id,
-                                        mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                                                          mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         done = False
@@ -69,7 +69,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         return self.get_service().files().update(fileId=file_id, media_body=media_body, fields='id, webViewLink').execute()
 
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
-        q = f" name = '{name}' "
+        q = f" name = '{name}' and trashed = false "
         if (parent_id):
             q += f" and '{parent_id}' in parents "
 
@@ -77,10 +77,10 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         while True:
             # pylint: disable=maybe-no-member
             response = self.get_service().files().list(q=q,
-                                            spaces='drive',
-                                            fields='nextPageToken, '
-                                                   'files(id, name, mimeType)',
-                                            pageToken=page_token).execute()
+                                                       spaces='drive',
+                                                       fields='nextPageToken, '
+                                                       'files(id, name, mimeType)',
+                                                       pageToken=page_token).execute()
             for file in response.get('files', []):
                 return file.get("id")
 
@@ -104,7 +104,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         return self._drive
 
     def get_files(self, folder_id):
-        return self.get_service().files().list(q="'" + folder_id + "' in parents", fields="files(id, name)").execute()
+        return self.get_service().files().list(q="'" + folder_id + "' in parents and trashed = false", fields="files(id, name)", orderBy="name", pageSize=1000).execute()
 
     def copy_file(self, file_id, folder_id, file_name):
         return self.get_service().files().copy(fileId=file_id, body={"parents": [folder_id], 'name': file_name}).execute()
@@ -113,4 +113,4 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         return self.get_service().files().delete(fileId=file_id).execute()
 
 
-#drive = GoogleDriveHandler('./credentials')
+# drive = GoogleDriveHandler('./credentials')

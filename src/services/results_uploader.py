@@ -20,7 +20,6 @@ class ResultsUploader:
         self._drive = drive
 
     def _create_folder(self, name, parent_id) -> str:
-        
         folder_id = self._drive.find_file(name, parent_id)
         if folder_id:
             return folder_id
@@ -61,7 +60,17 @@ class ResultsUploader:
         return file
 
     def _create_excel_file(self, original_file_name: str, google_file_name: str, parent_id: str) -> Any:
-        return self._drive.upload_file(original_file_name, google_file_name, [parent_id], 'application/vnd.ms-excel')
+        try:
+            file_id = self._drive.find_file(google_file_name, parent_id)
+        except:
+            file_id = file_id
+        if (file_id):
+            file = self._drive.update_file(file_id, original_file_name)
+        else:
+            file = self._drive.upload_file(original_file_name, google_file_name, [parent_id], 'application/vnd.ms-excel')
+
+        return file
+        #return self._drive.upload_file(original_file_name, google_file_name, [parent_id], 'application/vnd.ms-excel')
 
     def upload_ok_list(self, folder_base_id: str, folder_contabil_id: str, ok_list: List[UtilityBillOkResponse]) -> None:
         for resp in ok_list:
@@ -89,40 +98,85 @@ class ResultsUploader:
 
         return
 
+    def upload_ok_list_new(self, ok_list: List[UtilityBillOkResponse]) -> None:
+        total = len(ok_list)
+        count = 0
+        for resp in ok_list:
+            count = count + 1
+
+            if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO or \
+                    resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
+                data_base = resp.utility_bill.dt_vencimento
+            else:
+                data_base = resp.utility_bill.dt_emissao
+
+            dir_name = data_base.strftime('%Y_%m')
+            date_folder_id = self._create_folder(dir_name, resp.utility_bill.folder_id)
+
+            google_file_name = resp.utility_bill.nome_arquivo_google
+            self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google} ({count}/{total})', instant_msg=True)
+            file = self._copy_file(file_id=resp.email_file_id, folder_id=date_folder_id, file_name=google_file_name)
+            resp.google_file_id = file["id"]
+
+            if resp.utility_bill.is_accounting:
+                self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
+                date_folder_id = self._create_folder(dir_name, resp.utility_bill.folder_accounting_id)
+                _ = self._copy_file(file_id=resp.email_file_id, folder_id=date_folder_id, file_name=google_file_name)
+
+        return
+
     def _upload_duplicate_list(self, folder_others_base_id: str, dupl_list: List[UtilityBillDuplicatedResponse]) -> None:
-        self._log.info('Uploading error files - duplicates', instant_msg=True)
+        self._log.info('Copying duplicated files', instant_msg=True)
+        total = len(dupl_list)
+        count = 0
         for resp in dupl_list:
-            self._log.info(f'Uploading file {resp.file_name}', instant_msg=True)
+            count = count + 1
+            self._log.info(f'Uploading file {resp.file_name} ({count}/{total})', instant_msg=True)
             #file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
-            file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_others_base_id, file_name=resp.complete_file_name)
+            file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_others_base_id, file_name=resp.file_name)
             resp.google_file_id = file["id"]
         return
 
-    def _upload_error_list(self, folder_others_base_id: str, error_list: List[UtilityBillBaseResponse]) -> None:
-        self._log.info('Uploading error files', instant_msg=True)
+    def _upload_error_list(self, msg: str, folder_others_base_id: str, error_list: List[UtilityBillBaseResponse]) -> None:
+        self._log.info(msg, instant_msg=True)
+        total = len(error_list)
+        count = 0
         for resp in error_list:
-            self._log.info(f'Uploading file {resp.file_name}', instant_msg=True)
+            count = count + 1
+            self._log.info(f'Uploading file {resp.file_name} ({count}/{total})', instant_msg=True)
             #file = self._create_file(original_file_name=resp.complete_file_name, google_file_name=resp.file_name, parent_id=folder_others_base_id)
-            file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_others_base_id, file_name=resp.complete_file_name)
+            file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_others_base_id, file_name=resp.file_name)
             resp.google_file_id = file["id"]
         return
 
     def _upload_ignored_list(self, folder_others_base_id: str, list: List[UtilityBillIgnoredResponse]) -> None:
-        self._log.info('Uploading Ignored files', instant_msg=True)
+        self._log.info('Copying Ignored files', instant_msg=True)
+        total = len(list)
+        count = 0
         for conta in list:
-            self._log.info(f'Uploading file {conta.file_name}', instant_msg=True)
+            count = count + 1
+            self._log.info(f'Copying file {conta.file_name} ({count}/{total})', instant_msg=True)
             #file = self._create_file(original_file_name=conta.complete_file_name, google_file_name=conta.file_name, parent_id=folder_others_base_id)
-            file = self._copy_file(file_id=conta.email_file_id, folder_id=folder_others_base_id, file_name=conta.complete_file_name)
+            file = self._copy_file(file_id=conta.email_file_id, folder_id=folder_others_base_id, file_name=conta.file_name)
             conta.google_file_id = file["id"]
 
     def upload_other_list(self, folder_others_base_id: str, not_found_list: List[UtilityBillBase], error_list: List[UtilityBillBase], \
                             duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse]) -> None:
-        self._upload_error_list(folder_others_base_id, not_found_list)
-        self._upload_error_list(folder_others_base_id, error_list)
+        self._upload_error_list(msg='Copying not found list',folder_others_base_id= folder_others_base_id, error_list=not_found_list)
+        self._upload_error_list(msg='Copying error list', folder_others_base_id=folder_others_base_id, error_list=error_list)
         self._upload_duplicate_list(folder_others_base_id, duplicated_list)
         self._upload_ignored_list(folder_others_base_id, ignored_list)
 
-    def upload_results(self, folder_results_id: str, export_filename: str) -> None:
-        file_name = os.path.basename(export_filename)
+    def upload_results(self, folder_results_id: str, file_path: str) -> None:
+        file_name = os.path.basename(file_path)
         exports_folder_id = self._create_folder('exports', folder_results_id)
-        _ = self._create_excel_file(original_file_name=export_filename, google_file_name=file_name, parent_id=exports_folder_id)
+        _ = self._create_excel_file(original_file_name=file_path, google_file_name=file_name, parent_id=exports_folder_id)
+
+    def upload_excelfile(self, folder_results_id: str, file_path: str, subfolder_name: str) -> None:
+        file_name = os.path.basename(file_path)
+        if subfolder_name:
+            exports_folder_id = self._create_folder(subfolder_name, folder_results_id)
+        else:
+            exports_folder_id = folder_results_id
+            
+        _ = self._create_excel_file(original_file_name=file_path, google_file_name=file_name, parent_id=exports_folder_id)

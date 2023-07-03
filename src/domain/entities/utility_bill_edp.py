@@ -1,5 +1,6 @@
 from unidecode import unidecode
 from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
+from src.domain.enums.document_type_enum import DocumentTypeEnum
 from .base.base_utility_bill import UtilityBillBase
 
 
@@ -48,7 +49,10 @@ class UtilityBillEDP(UtilityBillBase):
         str_aux = 'digo de contrato'
         start_pos = text.find(str_aux, start_pos+len(str_aux)+1)
         if start_pos <= 0:
-            return ''
+            str_aux = 'digo do contrato'
+            start_pos = text.find(str_aux, start_pos+len(str_aux)+1)
+            if start_pos <= 0:
+                return ''
 
         str_aux = '\r\n'
         end_pos = text.find(str_aux, start_pos+len(str_aux)+1)
@@ -68,6 +72,8 @@ class UtilityBillEDP(UtilityBillBase):
 
     def _get_id_documento(self, text: str) -> None:
         self.id_documento = self._get_data(text, 'EDPC801-', '\r\n')
+        if (self.id_documento == ''):
+            self.id_documento = self._get_data(text, 'EDPC805-', '\r\n')
 
     def _get_data_vencimento(self, text) -> None:
         self.str_vencimento = self._get_data(text, 'conta a partir de:\r\n', '\r\n')
@@ -77,6 +83,10 @@ class UtilityBillEDP(UtilityBillBase):
 
     def _get_valor(self, text) -> None:
         self.str_valor = self._get_data(text, 'a pagar?\r\n', '\r\n')
+        if self.str_valor == '':
+            self.str_valor = self._get_data(text, 'a receber?\r\n', '\r\n')
+            if self.str_valor:
+                self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO          
 
     def _get_data_emissao(self, text) -> None:
         self.str_emissao = self._get_data(text, 'Documento emitido a:', '\r\n')
@@ -95,3 +105,4 @@ class UtilityBillEDP(UtilityBillBase):
         self._get_valor(text)
         self._check_account_of_qqd(text.upper())
         self._adjust_data()
+

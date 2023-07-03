@@ -142,9 +142,8 @@ class App:
         self._accommodations = AccommodationList(list_aux)
 
     def _get_except_list(self) -> None:
-        sheet_name = 'Excecoes'
         stream_file = self._drive.get_excel_file(self._accommodation_file_id)
-        df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name=sheet_name)
+        df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name='#EXCEÇOES')
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
         ApplicationException.when(cols != 4, f'A Sheet "{sheet_name}" da planilha de Alojamentos deve ter 4 colunas. ', self._log)
@@ -249,7 +248,7 @@ class App:
         uploader = ResultsUploader(self._log, self._drive)
 
         self._log.info('Uploading list of processed', instant_msg=True)
-        uploader.upload_ok_list(self._folder_client_id, self._folder_contabil_id, self._processed_list)
+        #uploader.upload_ok_list(self._folder_client_id, self._folder_contabil_id, self._processed_list)
         self._log.info(f'{len(self._processed_list)} file(s) processed', instant_msg=True)
 
         self._log.info('Uploading list of unprocessed ', instant_msg=True)

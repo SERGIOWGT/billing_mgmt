@@ -1,10 +1,8 @@
 {
     "work_directory":"/Users/sergio/work/Luiza/billing_mgmt/",
+    "email_in_local_folder": false, 
     "log_file_name": "logs/log.txt",
-    "_google_drive_accommodation_fileid": "1jJuCnxv0yJHIk1tg-sYCiA6VDvOXc3vq",
-    "_sergiowgt_teste_google_drive_accommodation_fileid": "1l9a9iO3W2i_eDXnGhSDH01Yg-TYPZWdl",
-    "__google_drive_accommodation_fileid":"1DFzu_vr-DklP0_KcUicLeDycnhDmCaTK",
-    "google_drive_accommodation_fileid":"1q7tVbIwAp2QZvF-W8TtjeBgMBUIen_Ue",
+    "google_drive_accommodation_fileid": "1KLqmDAI79viSYAC64CyEqC84BxTcNqgq_vHdVE9FI3w",
     "telegram_exec_bot_token":  "6292020167:AAF9X9jUsThCvDBS_x5sNWu24zY6xq2Vioc",
     "telegram_exec_bot_chats_id": [
         "1562103759",  

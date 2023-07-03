@@ -7,8 +7,7 @@ class UtilityBillBaseResponse():
     email_file_id: str = ''
     google_file_id: str = ''
     file_name: str = ''
-    complete_file_name: str = ''
-
+    
 @dataclass
 class UtilityBillErrorBaseResponse(UtilityBillBaseResponse):
     error_type: str = ''
@@ -18,13 +17,13 @@ class UtilityBillIgnoredResponse(UtilityBillErrorBaseResponse):
     ...
 
 @dataclass
-class UtilityBillOkResponse(UtilityBillBaseResponse):
-    utility_bill: Optional[UtilityBillBase] = None
-
-@dataclass
 class UtilityBillErrorResponse(UtilityBillErrorBaseResponse):
     utility_bill: Optional[UtilityBillBase] = None
 
 @dataclass
 class UtilityBillDuplicatedResponse(UtilityBillErrorResponse):
     original_google_link: str = ''
+
+@dataclass
+class UtilityBillOkResponse(UtilityBillBaseResponse):
+    utility_bill: Optional[UtilityBillBase] = None

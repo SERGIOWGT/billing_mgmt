@@ -40,13 +40,12 @@ class EmailApp:
                 file_list = email.get_save_attachments(message_uid, temp_dir, parsedate_to_datetime(rec_date))
 
                 num_emails += 1
-                # email.move(message_uid, output_email_folder)
+                email.move(message_uid, self._output_email_folder)
 
                 for file_name in file_list:
                     log.info(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.', instant_msg=True)
 
                 all_files.extend(file_list)
-                break
 
         return num_emails, all_files
 

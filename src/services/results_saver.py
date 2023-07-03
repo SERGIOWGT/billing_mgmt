@@ -19,18 +19,51 @@ class ResultsSaver:
         self._drive = drive
 
     def _make_google_link(self, file_id: str, file_name: str) -> str:
-        link = f'https://drive.google.com/file/d/{file_id}/view?usp=share_link'
-        return '=HYPERLINK("{}","{}")'.format(link, file_name)
+        #link = f'https://drive.google.com/file/d/{file_id}/view?usp=share_link'
+        #return '=HYPERLINK("{}","{}")'.format(link, file_name)
+        return f'https://drive.google.com/file/d/{file_id}/view?usp=drive_link'
+            
+    def _create_df_qd28(self, list: List[UtilityBillOkResponse]) -> Any:
+        def service_type_2_categoria(id_service_type):
+            if id_service_type == ServiceTypeEnum.AGUA:
+                return 'Águas'
+            if id_service_type == ServiceTypeEnum.TELECOM:
+                return 'Telecomunicações'
+            if id_service_type == ServiceTypeEnum.LUZ:
+                return 'Eletricidade'
+            return ''
 
-    def _create_df_ok(self, list: List[UtilityBillOkResponse]) -> Any:
-        columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Diretorio Google', 
-                   'Arquivo Google', 'Arquivo Original', 'Data Processamento']
+        columns = ['#DATA', '#ALOJAMENTO', '#CATEGORIA', '#DESCRICAO', '#VALOR_S/IVA', '#IVA', '#VALOR_C/IVA', '#LINK']
         df = pd.DataFrame(columns=columns)
         now = datetime.now()
         for line in list:
             _dict = {}
-            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_qualquer_destino else 'Não'
+            if line.utility_bill.dt_vencimento:
+                _dict['#DATA'] = line.utility_bill.dt_vencimento.strftime("%d/%m/%Y")
+            else:
+                _dict['#DATA'] = line.utility_bill.dt_emissao.strftime("%d/%m/%Y")
+            _dict['#ALOJAMENTO'] = line.utility_bill.id_alojamento
+            _dict['#CATEGORIA'] = service_type_2_categoria(line.utility_bill.tipo_servico)
+            _dict['#DESCRICAO'] = line.utility_bill.periodo_referencia
+            _dict['#VALOR_S/IVA'] = ''
+            _dict['#IVA'] = ''
+            _dict['#VALOR_C/IVA'] = str(line.utility_bill.valor).replace('.', ',')
+            _dict['#LINK'] = self._make_google_link(line.google_file_id, line.utility_bill.nome_arquivo_google)
+            _dict['Arquivo Original'] = line.file_name
+            _dict['Data Processamento'] = now.strftime("%Y/%m/%d.%H:%M:%S")
+
+            df = pd.concat([df, pd.DataFrame.from_records([_dict])])
+        return df
+
+
+    def _create_df_ok(self, list: List[UtilityBillOkResponse]) -> Any:
+        columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+                   'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Google', 'Arquivo Original', 'Data Processamento']
+        df = pd.DataFrame(columns=columns)
+        now = datetime.now()
+        for line in list:
+            _dict = {}
+            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_accounting else 'Não'
             _dict['Alojamento'] = line.utility_bill.id_alojamento
             _dict['Ano Emissao'] = str(line.utility_bill.dt_emissao.year)
             _dict['Mes Emissao'] = format(line.utility_bill.dt_emissao.month, '02d')
@@ -40,7 +73,8 @@ class ResultsSaver:
             _dict['N. Contrato'] = line.utility_bill.id_contrato
             _dict['N. Cliente'] = line.utility_bill.id_cliente
             _dict['N. Contribuinte'] = line.utility_bill.id_contribuinte
-            _dict['Local / Instalacao'] = line.utility_bill.local_consumo
+            _dict['Local Consumo'] = line.utility_bill.local_consumo
+            _dict['Instalacao'] = line.utility_bill.instalacao
             _dict['N. Documento / N. Fatura'] = line.utility_bill.id_documento
             _dict['Periodo Referencia'] = line.utility_bill.periodo_referencia
             _dict['Inicio Referencia'] = line.utility_bill.str_inicio_referencia
@@ -48,9 +82,8 @@ class ResultsSaver:
             _dict['Emissao'] = line.utility_bill.str_emissao
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
-            _dict['Diretorio Google'] = line.utility_bill.diretorio_google
             _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.utility_bill.nome_arquivo_google)
-            _dict['Arquivo Original'] = line.complete_file_name
+            _dict['Arquivo Original'] = line.file_name
             _dict['Data Processamento'] = now.strftime("%Y/%m/%d.%H:%M:%S")
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
@@ -58,20 +91,21 @@ class ResultsSaver:
 
     def _create_df_not_found(self, list: List[UtilityBillErrorResponse]) -> Any:
         columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
+                   'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
                    'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
-            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_qualquer_destino else 'Não'
+            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_accounting else 'Não'
             _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
             _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
             _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
             _dict['N. Contrato'] = line.utility_bill.id_contrato
             _dict['N. Cliente'] = line.utility_bill.id_cliente
             _dict['N. Contribuinte'] = line.utility_bill.id_contribuinte
-            _dict['Local / Instalacao'] = line.utility_bill.local_consumo
+            _dict['Local Consumo'] = line.utility_bill.local_consumo
+            _dict['Instalacao'] = line.utility_bill.instalacao
             _dict['N. Documento / N. Fatura'] = line.utility_bill.id_documento
             _dict['Periodo Referencia'] = line.utility_bill.periodo_referencia
             _dict['Inicio Referencia'] = line.utility_bill.str_inicio_referencia
@@ -80,27 +114,28 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
-            _dict['Arquivo Original'] = line.complete_file_name
+            _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
     def _create_df_error(self, list: List[UtilityBillErrorResponse]) -> Any:
         columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
+                   'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
                    'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo Erro', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
-            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_qualquer_destino else 'Não'
+            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_accounting else 'Não'
             _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
             _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
             _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
             _dict['N. Contrato'] = line.utility_bill.id_contrato
             _dict['N. Cliente'] = line.utility_bill.id_cliente
             _dict['N. Contribuinte'] = line.utility_bill.id_contribuinte
-            _dict['Local / Instalacao'] = line.utility_bill.local_consumo
+            _dict['Local Consumo'] = line.utility_bill.local_consumo
+            _dict['Instalacao'] = line.utility_bill.instalacao
             _dict['N. Documento / N. Fatura'] = line.utility_bill.id_documento
             _dict['Periodo Referencia'] = line.utility_bill.periodo_referencia
             _dict['Inicio Referencia'] = line.utility_bill.str_inicio_referencia
@@ -110,27 +145,28 @@ class ResultsSaver:
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo Erro'] = line.error_type
             _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
-            _dict['Arquivo Original'] = line.complete_file_name
+            _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
     def _create_df_duplicated(self, list: List[UtilityBillDuplicatedResponse]) -> Any:
         columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
-                   'Local / Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
+                   'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
                    'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Google', 'Arquivo Pago', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
-            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_qualquer_destino else 'Não'
+            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_accounting else 'Não'
             _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
             _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
             _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
             _dict['N. Contrato'] = line.utility_bill.id_contrato
             _dict['N. Cliente'] = line.utility_bill.id_cliente
             _dict['N. Contribuinte'] = line.utility_bill.id_contribuinte
-            _dict['Local / Instalacao'] = line.utility_bill.local_consumo
+            _dict['Local Consumo'] = line.utility_bill.local_consumo
+            _dict['Instalacao'] = line.utility_bill.instalacao
             _dict['N. Documento / N. Fatura'] = line.utility_bill.id_documento
             _dict['Periodo Referencia'] = line.utility_bill.periodo_referencia
             _dict['Inicio Referencia'] = line.utility_bill.str_inicio_referencia
@@ -140,7 +176,7 @@ class ResultsSaver:
             _dict['Valor'] = line.utility_bill.valor
             _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
             _dict['Arquivo Pago'] = line.original_google_link
-            _dict['Arquivo Original'] = line.complete_file_name
+            _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
@@ -152,11 +188,11 @@ class ResultsSaver:
             _dict = {}
             _dict['Tipo Erro'] = line.error_type
             _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
-            _dict['Arquivo Original'] = line.complete_file_name
+            _dict['Arquivo Original'] = line.file_name
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute(self, export_filename: str, database_filename: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
+    def execute(self, export_filename: str, qd28_filename: str, database_filename: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
         new_ok_list.sort(key=lambda x: x.utility_bill.concessionaria)
         not_found_list.sort(key=lambda x: x.utility_bill.concessionaria)
         duplicated_list.sort(key=lambda x: x.utility_bill.concessionaria)
@@ -167,6 +203,7 @@ class ResultsSaver:
         df_error = self._create_df_error(error_list)
         df_duplicated = self._create_df_error(duplicated_list)
         df_ignored = self._create_df_ignored(ignored_list)
+        df_qd28 = self._create_df_qd28(new_ok_list)
 
         with pd.ExcelWriter(export_filename) as writer:
             df_ok.to_excel(writer, sheet_name='Processados', index=False)
@@ -187,5 +224,20 @@ class ResultsSaver:
 
                     # adiciona o dataframe na planilha excel
                     for row in df_ok.iterrows():
+                        ws.append(row[1].tolist())
+                    writer.save()
+
+        if os.path.exists(qd28_filename) is False:
+            with pd.ExcelWriter(qd28_filename) as writer:
+                df_qd28.to_excel(writer, sheet_name='Página1', index=False)
+        else:
+            if len(df_qd28) > 0:
+                book = load_workbook(qd28_filename)
+                with pd.ExcelWriter(qd28_filename) as writer:
+                    writer.book = book
+                    ws = writer.sheets['Página1']
+
+                    # adiciona o dataframe na planilha excel
+                    for row in df_qd28.iterrows():
                         ws.append(row[1].tolist())
                     writer.save()

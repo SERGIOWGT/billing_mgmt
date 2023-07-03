@@ -1,3 +1,4 @@
+import re
 from unidecode import unidecode
 
 from src.domain.enums import (ServiceProviderEnum, DocumentTypeEnum,
@@ -13,7 +14,10 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
         self.tipo_servico = ServiceTypeEnum.AGUA
 
     def _get_local_consumo(self, text) -> None:
-        self.local_consumo = self._get_data(text, 'Local Consumo:', '\r\n')
+        self.local_consumo = ''
+
+    def _get_instalacao(self, text) -> None:
+        self.instalacao = self._get_data(text, 'Local Consumo:', '\r\n')
 
     def _get_id_contribuinte(self, text) -> None:
         self.id_contribuinte = self._get_data(text, 'NIF:', '\r\n')
@@ -38,8 +42,13 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
         self.periodo_referencia = self._get_data(text, 'Periodo Faturacao:', '\r\n')
 
     def _get_id_documento(self, text: str) -> None:
-        self.id_documento = self._get_data(text, 'Titular da conta:\r\n', '\r\n')
-
+        if self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO:
+            self.id_documento = self._get_data(text, 'Nota de Credito: ', 'Data Fatura')
+            if not self.id_documento:
+                self.id_documento = self._get_data(text, 'Titular da conta:\r\n', '\r\n')
+        else:
+            self.id_documento = self._get_data(text, 'Titular da conta:\r\n', '\r\n')
+                
     def _get_data_vencimento(self, text) -> bool:
         self.str_vencimento = self._get_data(text, 'Debito a partir de\r\n', '\r\n')
         if (self.str_vencimento == ''):
@@ -47,11 +56,27 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
 
     def _get_valor(self, text) -> None:
-        vet = self._get_data(text, 'Saldo Atual', '\r\n')
-        vet = vet.strip()
-        vet = vet.split(' ')
-        if (len(vet) == 2):
-            self.str_valor = vet[1]
+        if self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO:
+            #self.str_valor = self._get_data(text, 'Valor a Receber\r\n', '\r\n')
+            regex = '[^0-9]*(-?\d+[.,]?\d*)EUR\r\nValor a Receber\r\n'
+            x = re.search(regex, text)
+            if x and len(x.regs) >= 2:
+                pos_ini = x.regs[1][0]
+                pos_fim = x.regs[1][1]
+                self.str_valor = text[pos_ini:pos_fim]
+        else:
+            #vet = self._get_data(text, 'Saldo Atual', '\r\n')
+            #vet = vet.strip()
+            #vet = vet.split(' ')
+            #if (len(vet) == 2):
+                #self.str_valor = vet[1]
+            regex = '[^0-9]*(-?\d+[.,]?\d*)EUR\r\nValor a Pagar\r\n'
+            x = re.search(regex, text)
+            if x and len(x.regs) >= 2:
+                pos_ini = x.regs[1][0]
+                pos_fim = x.regs[1][1]
+                self.str_valor = text[pos_ini:pos_fim]
+
 
     def _get_data_emissao(self, text) -> None:
         self.str_emissao = self._get_data(text, 'Data de Emissao\r\n', '\r\n')
@@ -60,8 +85,18 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
     def create(self, text: str) -> None:
         text = unidecode(text)
 
+        pos_nc = text.find('Nota de Credito\r\nDocumento:')
+        #pos_vpag = text.find('r\nValor a Pagar\r\n')
+        if pos_nc > 0:
+            self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
+        else:
+            pos_vrec = text.find('\r\nValor a Receber\r\n')
+            if pos_vrec > 0:
+                self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
+
         self._get_periodo_faturacao(text)
         self._get_local_consumo(text)
+        self._get_instalacao(text)
         self._get_id_cliente(text)
         self._get_id_contrato(text)
         self._get_id_documento(text)
@@ -70,12 +105,11 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
         self._get_valor(text)
         self._check_account_of_qqd(text.upper())
 
-        if (self.str_vencimento == '') and (self.valor is None) and self.id_documento == '':
-            self.id_documento = self._get_data(text, 'Nota de Credito: ', 'Data Fatura')
-            self.str_valor = self._get_data(text, 'Valor a Receber\r\n', '\r\n')
-            if (self.id_documento) and (self.str_valor):
-                self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
-        
+        #if (self.str_vencimento == '') and (self.valor is None) and self.id_documento == '':
+        #    self.id_documento = self._get_data(text, 'Nota de Credito: ', 'Data Fatura')
+        #    if (self.id_documento) and (self.str_valor):
+        #        self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
+
         self._adjust_data()
         if (self.tipo_documento != DocumentTypeEnum.NOTA_CREDITO):
             start_pos = text.find(f'-{self.str_valor}')
@@ -83,4 +117,3 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
                 if (self.id_documento) and (self.str_valor):
                     self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
                     self.valor = self.valor * (-1)
-

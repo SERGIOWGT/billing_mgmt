@@ -7,3 +7,4 @@ class PaidUtilityBill():
     nome_Accommodation: str
     id_documento: str
     dt_emissao: str
+    original_file_id: str

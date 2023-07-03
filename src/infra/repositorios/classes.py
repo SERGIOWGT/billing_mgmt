@@ -36,13 +36,15 @@ class Contract:
         self._servico = servico
 
     def is_valid(self) -> bool:
-        if self._cliente is not None:
+        if self._cliente:
             return True
-        if self._conta is not None:
+        if self._conta:
             return True
-        if self._contrato is not None:
+        if self._contrato:
             return True
-        if self._local_consumo is not None:
+        if self._local_consumo:
+            return True
+        if self._instalacao:
             return True
 
         return False
@@ -55,18 +57,40 @@ class Accommodation2:
     _folder_accounting_id = ''
     _services_type: List[ServiceTypeStatus] = None
     _contracts: List[Contract] = None
+    _status_fecho = {}
+    _line: int = 0
 
-    def __init__(self, id: str, start_date: datetime, nif_title: str, folder_id: str, folder_accounting_id: str) -> None:
+    def __init__(self, id: str, start_date: datetime, nif_title: str, folder_id: str, folder_accounting_id: str, line: int, status_fecho: dict) -> None:
         self._id = id
         self._start_date = start_date
         self._nif_title = nif_title
         self._folder_id = folder_id
         self._folder_accounting_id = folder_accounting_id
         self._contracts = []
-        self._services_type = []
+        self._services_type: List[ServiceTypeStatus] = []
+        self._status_fecho = status_fecho
+        self._line = line
 
     def add_contract(self, contract: Contract) -> None:
         self._contracts.append(contract)
 
+    @property
+    def number_of_contracts(self) -> int:
+        return len(self._contracts)
+
     def add_service_type(self, service_type_status: ServiceTypeStatus) -> None:
         self._services_type.append(service_type_status)
+
+    def is_valid_start_date(self, data: datetime) -> bool:
+        if self._start_date.year == 2050:
+            return True
+        
+        return self._start_date < data
+           
+
+    def is_must_accounting(self, service_type: ServiceTypeEnum):
+        for el in self._services_type:
+            if el._id_service_type == service_type:
+                return el._status == 2
+            
+        return False

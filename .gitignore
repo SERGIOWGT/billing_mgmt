@@ -19,6 +19,7 @@ src/__pycache__/
 
 temp/*.*
 exports/
+.email_work_folder/
 
 .eggs
 

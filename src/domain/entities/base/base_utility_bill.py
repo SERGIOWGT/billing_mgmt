@@ -25,8 +25,10 @@ class UtilityBillBase:
     id_contribuinte = ''
     id_cliente = ''
     id_contrato = ''
+    id_conta = ''
     periodo_referencia = ''
     local_consumo = ''
+    instalacao = ''
     str_emissao = ''
     str_vencimento = ''
     str_inicio_referencia = ''
@@ -35,6 +37,7 @@ class UtilityBillBase:
     id_alojamento = ''
     diretorio_google = ''
     str_erro = ''
+    folder_id = ''
 
     dt_inicio_referencia: Optional[date] = None
     dt_fim_referencia: Optional[date] = None
@@ -42,8 +45,7 @@ class UtilityBillBase:
     dt_emissao: Optional[date] = None
     valor: Optional[float] = None
     _is_qualquer_destino: Optional[bool] = None
-
-    
+    is_accounting: bool = False
 
     @staticmethod
     def _get_data(text, start_str, end_str='', num_chars=0) -> str:
@@ -220,11 +222,11 @@ class UtilityBillBase:
                 part_name = datetime.datetime.now().strftime("%Y_%m_%d")
 
             if (self.tipo_documento == DocumentTypeEnum.NOTA_CREDITO):
-                part_name += 'NC'
+                part_name += f'_NC_{self.id_documento}'
             elif (self.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):
-                part_name += 'FZ'
+                part_name += '_FZ'
         return f'{part_name}_{_concessionaria}_{_alojamento}.pdf'
-    
+
     def __eq__(self, other):
         if isinstance(other, UtilityBillBase):
             return self.concessionaria == other.concessionaria and \

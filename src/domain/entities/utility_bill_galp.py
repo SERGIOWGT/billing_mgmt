@@ -89,6 +89,9 @@ class UtilityBillGalp(UtilityBillBase):
             self.str_vencimento = ''
         else:
             self.str_vencimento = self._get_data(text, 'DEBITO ATE:', '\r\n')
+            if self.str_vencimento == '':
+                self.str_vencimento = self._get_data(text, 'pode pagar ate\r\n', '\r\n')
+            
             self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
 
     def _get_valor(self, text) -> None:
@@ -96,6 +99,8 @@ class UtilityBillGalp(UtilityBillBase):
             self.str_valor = self._get_data(text, 'Tem a receber\r\n', 'EUR')
         else:
             self.str_valor = self._get_data(text, 'VALOR A DEBITAR:', 'EUR')
+            if self.str_valor == '':
+                self.str_valor = self._get_data(text, 'O valor desta fatura e\r\n', 'EUR')
 
     def _get_data_emissao(self, text) -> None:
         str_emissao = f'{self.id_documento}\r\nData:'

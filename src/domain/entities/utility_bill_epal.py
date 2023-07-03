@@ -61,7 +61,7 @@ class UtilityBillEpal(UtilityBillBase):
         self._get_periodo_faturacao(text)
         self._get_local_consumo(text)
         self._get_id_cliente(text)
-        self._get_id_contrato(text)
+        #self._get_id_contrato(text)
         self._get_id_documento(text)
         self._get_data_emissao(text)
         self._get_data_vencimento(text)

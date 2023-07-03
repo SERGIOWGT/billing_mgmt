@@ -103,4 +103,4 @@ class UtilityBillVodafone(UtilityBillBase):
         if self.id_contribuinte == '' and self.id_contrato == '' and self.id_documento == '':
             if 'Detalhe da fatura de' in text:
                 self.tipo_documento = DocumentTypeEnum.DETALHE_FATURA
-                self.str_erro = '1'
+                self.str_erro = 'DETALHE_FATURA'
