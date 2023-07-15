@@ -22,32 +22,14 @@ class EmailApp:
             self._user = 'robotqd23@gmail.com'
             self._password = 'hgtyrvabzwumkiwu'
             email.login(self._smtp_server, self._user, self._password, use_ssl=True)
+            log.info('Email conected', instant_msg=True)
         except Exception as error:
             msg = str(error)
             log.critical(msg)
             raise ApplicationException('Error connecting email') from error
 
         return email
-
-    def _download_files(self, email: IEmailHandler, log, temp_dir) -> int:
-        num_emails = 0
-        messages_id = email.get_messages_id(self._input_email_folder)
-
-        all_files = []
-        for message_uid in messages_id:
-            (subject, sender, rec_date, has_attachments) = email.get_email_infos(message_uid)
-            if (has_attachments):
-                file_list = email.get_save_attachments(message_uid, temp_dir, parsedate_to_datetime(rec_date))
-
-                num_emails += 1
-                email.move(message_uid, self._output_email_folder)
-
-                for file_name in file_list:
-                    log.info(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.', instant_msg=True)
-
-                all_files.extend(file_list)
-
-        return num_emails, all_files
+       
 
     def execute(self, drive, log, smtp_server, user, password, input_email_folder, output_email_folder, temp_dir: str, work_folder_id: str):
         self._smtp_server = smtp_server
@@ -56,18 +38,39 @@ class EmailApp:
         self._input_email_folder = input_email_folder
         self._output_email_folder = output_email_folder
 
-        log.info('Downloading PDF files from emails', instant_msg=True)
+        log.info(f'Counting email on {input_email_folder}', instant_msg=True)
         email = self._get_email_handler(log)
-        _, all_files = self._download_files(email, log, temp_dir)
-        for file_name in all_files:
-            complete_filename = os.path.join(temp_dir, file_name)
-            log.info(f'Uploading email file {file_name}', instant_msg=True)
-            drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[work_folder_id])
-            log.info(f'Removing file {file_name}', instant_msg=True)
-            os.remove(complete_filename)
+        messages_id = email.get_messages_id(self._input_email_folder)
+        log.info(f'Total emails {len(messages_id)}', instant_msg=True)
+        
+        num_files = 0
+        total_emails = len(messages_id)
+        count_emails = 0
+        num_emails = 0
+        for message_uid in messages_id:
+            (subject, sender, rec_date, has_attachments) = email.get_email_infos(message_uid)
+            count_emails += 1
+            log.info(f'Reading email ({count_emails}/{total_emails})', instant_msg=True)
+            if has_attachments is False:
+                email.move(message_uid, 'SEM_ATT')
+                continue
+     
+            file_list = email.get_save_attachments(message_uid, temp_dir, parsedate_to_datetime(rec_date))
+            num_emails += 1
+            for file_name in file_list:
+                num_files += 1
+                log.info(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.', instant_msg=True)
+                complete_filename = os.path.join(temp_dir, file_name)
+                log.info(f'Uploading email file {file_name}', instant_msg=True)
+                drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[work_folder_id])
+                log.info(f'Removing file {file_name}', instant_msg=True)
+                os.remove(complete_filename)
+        
+            email.move(message_uid, self._output_email_folder)
+
         email.logout()
 
-        num_files = len(all_files)
+        log.info(f'Total emails: {total_emails} with Att: {num_emails}', instant_msg=True, warn=True)
         if num_files == 0:
             log.info('No files downloaded', instant_msg=True, warn=True)
         elif num_files == 1:

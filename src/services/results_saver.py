@@ -22,11 +22,11 @@ class ResultsSaver:
         #link = f'https://drive.google.com/file/d/{file_id}/view?usp=share_link'
         #return '=HYPERLINK("{}","{}")'.format(link, file_name)
         return f'https://drive.google.com/file/d/{file_id}/view?usp=drive_link'
-            
+
     def _create_df_qd28(self, list: List[UtilityBillOkResponse]) -> Any:
         def service_type_2_categoria(id_service_type):
             if id_service_type == ServiceTypeEnum.AGUA:
-                return 'Águas'
+                return 'Água'
             if id_service_type == ServiceTypeEnum.TELECOM:
                 return 'Telecomunicações'
             if id_service_type == ServiceTypeEnum.LUZ:
@@ -48,7 +48,7 @@ class ResultsSaver:
             _dict['#VALOR_S/IVA'] = ''
             _dict['#IVA'] = ''
             _dict['#VALOR_C/IVA'] = str(line.utility_bill.valor).replace('.', ',')
-            _dict['#LINK'] = self._make_google_link(line.google_file_id, line.utility_bill.nome_arquivo_google)
+            _dict['#LINK'] = self._make_google_link(line.google_file_id, line.file_name)
             _dict['Arquivo Original'] = line.file_name
             _dict['Data Processamento'] = now.strftime("%Y/%m/%d.%H:%M:%S")
 
@@ -82,7 +82,7 @@ class ResultsSaver:
             _dict['Emissao'] = line.utility_bill.str_emissao
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.utility_bill.nome_arquivo_google)
+            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.nome_calculado)
             _dict['Arquivo Original'] = line.file_name
             _dict['Data Processamento'] = now.strftime("%Y/%m/%d.%H:%M:%S")
 
@@ -120,14 +120,13 @@ class ResultsSaver:
         return df
 
     def _create_df_error(self, list: List[UtilityBillErrorResponse]) -> Any:
-        columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+        columns = ['Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
                    'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo Erro', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
-            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_accounting else 'Não'
             _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
             _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
             _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
@@ -151,14 +150,16 @@ class ResultsSaver:
         return df
 
     def _create_df_duplicated(self, list: List[UtilityBillDuplicatedResponse]) -> Any:
-        columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+        columns = ['Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Google', 'Arquivo Pago', 'Arquivo Original']
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo', 'Arquivo Google', 'Arquivo Pago', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
-            _dict['QQ Destino'] = 'Sim' if line.utility_bill.is_accounting else 'Não'
+            _dict['Alojamento'] = line.utility_bill.id_alojamento
+            _dict['Ano Emissao'] = str(line.utility_bill.dt_emissao.year)
+            _dict['Mes Emissao'] = format(line.utility_bill.dt_emissao.month, '02d')
             _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
             _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
             _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
@@ -174,12 +175,48 @@ class ResultsSaver:
             _dict['Emissao'] = line.utility_bill.str_emissao
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
+            _dict['Tipo'] = line.error_type
             _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
             _dict['Arquivo Pago'] = line.original_google_link
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
+
+
+    def _create_df_expired(self, list: List[UtilityBillDuplicatedResponse]) -> Any:
+        columns = ['Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+                 'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
+                 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo', 'Arquivo Google', 'Arquivo Original']
+
+        df = pd.DataFrame(columns=columns)
+        for line in list:
+            _dict = {}
+            _dict['Alojamento'] = line.utility_bill.id_alojamento
+            _dict['Ano Emissao'] = str(line.utility_bill.dt_emissao.year)
+            _dict['Mes Emissao'] = format(line.utility_bill.dt_emissao.month, '02d')
+            _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
+            _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
+            _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
+            _dict['N. Contrato'] = line.utility_bill.id_contrato
+            _dict['N. Cliente'] = line.utility_bill.id_cliente
+            _dict['N. Contribuinte'] = line.utility_bill.id_contribuinte
+            _dict['Local Consumo'] = line.utility_bill.local_consumo
+            _dict['Instalacao'] = line.utility_bill.instalacao
+            _dict['N. Documento / N. Fatura'] = line.utility_bill.id_documento
+            _dict['Periodo Referencia'] = line.utility_bill.periodo_referencia
+            _dict['Inicio Referencia'] = line.utility_bill.str_inicio_referencia
+            _dict['Fim Referencia'] = line.utility_bill.str_fim_referencia
+            _dict['Emissao'] = line.utility_bill.str_emissao
+            _dict['Vencimento'] = line.utility_bill.str_vencimento
+            _dict['Valor'] = line.utility_bill.valor
+            _dict['Tipo'] = line.error_type
+            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['Arquivo Original'] = line.file_name
+
+            df = pd.concat([df, pd.DataFrame.from_records([_dict])])
+        return df
+
 
     def _create_df_ignored(self, list: List[UtilityBillIgnoredResponse]) -> Any:
         columns = ['Tipo Erro', 'Arquivo Google', 'Arquivo Original']
@@ -192,7 +229,7 @@ class ResultsSaver:
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute(self, export_filename: str, qd28_filename: str, database_filename: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
+    def execute(self, export_filename: str, qd28_filename: str, database_filename: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse],  expired_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
         new_ok_list.sort(key=lambda x: x.utility_bill.concessionaria)
         not_found_list.sort(key=lambda x: x.utility_bill.concessionaria)
         duplicated_list.sort(key=lambda x: x.utility_bill.concessionaria)
@@ -201,7 +238,8 @@ class ResultsSaver:
         df_ok = self._create_df_ok(new_ok_list)
         df_nf = self._create_df_not_found(not_found_list)
         df_error = self._create_df_error(error_list)
-        df_duplicated = self._create_df_error(duplicated_list)
+        df_expired = self._create_df_expired(expired_list)
+        df_duplicated = self._create_df_duplicated(duplicated_list)
         df_ignored = self._create_df_ignored(ignored_list)
         df_qd28 = self._create_df_qd28(new_ok_list)
 
@@ -209,6 +247,7 @@ class ResultsSaver:
             df_ok.to_excel(writer, sheet_name='Processados', index=False)
             df_nf.to_excel(writer, sheet_name='Sem Alojamentos', index=False)
             df_error.to_excel(writer, sheet_name='Erros', index=False)
+            df_expired.to_excel(writer, sheet_name='Vencidos', index=False)
             df_duplicated.to_excel(writer, sheet_name='Duplicados', index=False)
             df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
 

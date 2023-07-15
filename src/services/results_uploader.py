@@ -86,13 +86,13 @@ class ResultsUploader:
             dir_name = data_base.strftime('%Y_%m')
             date_folder_id = self._create_folder(dir_name, folder_id)
 
-            google_file_name = resp.utility_bill.nome_arquivo_google
-            self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google}', instant_msg=True)
+            google_file_name = resp.nome_calculado
+            self._log.info(f'Copying file {google_file_name}', instant_msg=True)
             file = self._copy_file(file_id=resp.email_file_id, folder_id=date_folder_id, file_name=google_file_name)
 
             resp.google_file_id = file["id"]
             if resp.utility_bill.is_qualquer_destino:
-                self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
+                self._log.info(f'Copying file {google_file_name} on accounting folder', instant_msg=True)
                 folder_id = self._create_folder(dir_name, folder_contabil_id)
                 file = self._copy_file(file_id=resp.email_file_id, folder_id=folder_id, file_name=google_file_name)
 
@@ -101,25 +101,34 @@ class ResultsUploader:
     def upload_ok_list_new(self, ok_list: List[UtilityBillOkResponse]) -> None:
         total = len(ok_list)
         count = 0
+        old_file_id = ''
+        old_file_name = ''
         for resp in ok_list:
             count = count + 1
-
-            if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO or \
-                    resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
-                data_base = resp.utility_bill.dt_vencimento
+            
+            if resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
+                if old_file_name == resp.nome_calculado:
+                    resp.google_file_id = old_file_id
+                    continue
+                
+            old_file_name = resp.nome_calculado
+            if (resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO) or \
+                (resp.utility_bill.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO):
+                data_base = resp.utility_bill.dt_vencimento if resp.utility_bill.dt_vencimento else resp.utility_bill.dt_emissao
             else:
                 data_base = resp.utility_bill.dt_emissao
 
             dir_name = data_base.strftime('%Y_%m')
             date_folder_id = self._create_folder(dir_name, resp.utility_bill.folder_id)
 
-            google_file_name = resp.utility_bill.nome_arquivo_google
-            self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google} ({count}/{total})', instant_msg=True)
+            google_file_name = resp.nome_calculado
+            self._log.info(f'Copying file {google_file_name} ({count}/{total})', instant_msg=True)
             file = self._copy_file(file_id=resp.email_file_id, folder_id=date_folder_id, file_name=google_file_name)
             resp.google_file_id = file["id"]
+            old_file_id = resp.google_file_id
 
             if resp.utility_bill.is_accounting:
-                self._log.info(f'Copying file {resp.utility_bill.nome_arquivo_google} on accounting folder', instant_msg=True)
+                self._log.info(f'Copying file {google_file_name} on accounting folder', instant_msg=True)
                 date_folder_id = self._create_folder(dir_name, resp.utility_bill.folder_accounting_id)
                 _ = self._copy_file(file_id=resp.email_file_id, folder_id=date_folder_id, file_name=google_file_name)
 
@@ -160,10 +169,11 @@ class ResultsUploader:
             file = self._copy_file(file_id=conta.email_file_id, folder_id=folder_others_base_id, file_name=conta.file_name)
             conta.google_file_id = file["id"]
 
-    def upload_other_list(self, folder_others_base_id: str, not_found_list: List[UtilityBillBase], error_list: List[UtilityBillBase], \
+    def upload_other_list(self, folder_others_base_id: str, not_found_list: List[UtilityBillBase], error_list: List[UtilityBillBase], expired_list: List[UtilityBillBase],
                             duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse]) -> None:
         self._upload_error_list(msg='Copying not found list',folder_others_base_id= folder_others_base_id, error_list=not_found_list)
         self._upload_error_list(msg='Copying error list', folder_others_base_id=folder_others_base_id, error_list=error_list)
+        self._upload_error_list(msg='Copying expired list', folder_others_base_id=folder_others_base_id, error_list=expired_list)
         self._upload_duplicate_list(folder_others_base_id, duplicated_list)
         self._upload_ignored_list(folder_others_base_id, ignored_list)
 

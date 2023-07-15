@@ -112,7 +112,13 @@ class EmailHandler(IEmailHandler):
             if part.get('Content-Disposition') is None:
                 continue
 
-            att_file_name = f"{timestamp}_{file_number}.pdf"
+            att_name = part.get_filename()
+            if (len(att_name) > 0):
+                att_name = att_name.upper()
+
+            att_name = att_name.replace(' ', '_')
+            att_name = att_name.replace('.PDF', '')
+            att_file_name = f"{timestamp}_{file_number}_from_{att_name}.PDF"
             file_number = file_number + 1
             #att_file_name = part.get_filename()
             #if (att_file_name):

@@ -1,6 +1,7 @@
 import re
 from unidecode import unidecode
 from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
+from src.domain.enums.document_type_enum import DocumentTypeEnum
 from .base.base_utility_bill import UtilityBillBase
 
 
@@ -58,3 +59,7 @@ class UtilityBillMEO(UtilityBillBase):
         self._get_valor(text)
         self._check_account_of_qqd(text.upper())
         self._adjust_data()
+
+        if (self.str_vencimento == ''):
+            if (self.valor == 0) and (self.str_emissao != ''):
+                self.tipo_documento = DocumentTypeEnum.FATURA_ZERADA

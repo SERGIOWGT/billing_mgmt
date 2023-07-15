@@ -201,7 +201,7 @@ class UtilityBillBase:
         return self._is_qualquer_destino
 
     @property
-    def nome_arquivo_google(self) -> str:
+    def nome_calculado(self) -> str:
         if self.is_ok() is False:
             return ''
 
@@ -214,7 +214,11 @@ class UtilityBillBase:
         _alojamento = self.id_alojamento
 
         if (self.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO):
-            part_name = self.dt_vencimento.strftime("%Y_%m_%d")
+            dt = self.dt_vencimento if self.dt_vencimento else self.dt_emissao
+            part_name = dt.strftime("%Y_%m_%d")
+        elif self.tipo_documento == DocumentTypeEnum.CONTA_CONSUMO_RATEIO:
+            dt = self.dt_vencimento if self.dt_vencimento else self.dt_emissao
+            part_name = dt.strftime("%Y_%m_%d")
         else:
             if self.dt_emissao:
                 part_name = self.dt_emissao.strftime("%Y_%m_%d")

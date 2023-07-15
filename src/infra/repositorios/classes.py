@@ -84,13 +84,17 @@ class Accommodation2:
     def is_valid_start_date(self, data: datetime) -> bool:
         if self._start_date.year == 2050:
             return True
-        
+
         return self._start_date < data
-           
+
+    def is_closed(self, data: datetime) -> bool:
+        str_data = f'{data.year}.{data.month}'
+        ret = self._status_fecho.get(str_data, 0)
+        return ret != 0
 
     def is_must_accounting(self, service_type: ServiceTypeEnum):
         for el in self._services_type:
             if el._id_service_type == service_type:
-                return el._status == 2
-            
+                return el._status == 1  # Um
+
         return False

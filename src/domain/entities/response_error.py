@@ -7,6 +7,7 @@ class UtilityBillBaseResponse():
     email_file_id: str = ''
     google_file_id: str = ''
     file_name: str = ''
+    nome_calculado: str = ''
     
 @dataclass
 class UtilityBillErrorBaseResponse(UtilityBillBaseResponse):

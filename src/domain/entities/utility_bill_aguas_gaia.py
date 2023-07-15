@@ -111,9 +111,9 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
         #        self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
 
         self._adjust_data()
-        if (self.tipo_documento != DocumentTypeEnum.NOTA_CREDITO):
-            start_pos = text.find(f'-{self.str_valor}')
-            if (start_pos > 0):
-                if (self.id_documento) and (self.str_valor):
-                    self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
-                    self.valor = self.valor * (-1)
+        #if (self.tipo_documento != DocumentTypeEnum.NOTA_CREDITO):
+        #    start_pos = text.find(f'-{self.str_valor}')
+        #    if (start_pos > 0):
+        #        if (self.id_documento) and (self.str_valor):
+        #            self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
+        #            self.valor = self.valor * (-1)

@@ -26,7 +26,7 @@ class PaidBillRepository:
         cols = df.shape[1]
         ApplicationException.when(cols != 22, 'History Sheet must have 22 columns. ')
         expected_columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico',
-                            'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte', 'Local / Instalacao',
+                            'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte', 'Local Consumo', 'Instalacao',
                             'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia', 'Fim Referencia',
                             'Emissao', 'Vencimento', 'Valor', 'Arquivo Google', 'Arquivo Original', 'Data Processamento']
         actual_columns = df.columns.tolist()

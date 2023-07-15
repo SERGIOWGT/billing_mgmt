@@ -144,7 +144,7 @@ if __name__ == '__main__':
     paid_repo = PaidBillRepository()
     paid_bill_path = os.path.join(base_dir, 'database', 'database.xlsx')
     qd28_path = os.path.join(base_dir,'database', '#QD28_IMPORTACAO_ROBOT.xlsx')
-    #paid_repo.from_excel(paid_bill_path)
+    paid_repo.from_excel(paid_bill_path)
     exports_folder = os.path.join(base_dir, 'exports')
 
     xxx_app = ProcessPdfApp(google_drive_handler, log, accommodations_repo, paid_repo, except_repo)
