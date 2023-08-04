@@ -19,9 +19,9 @@ class FilesHandler:
             new_file_name = os.path.join(destination_folder, os.path.basename(file_name))
             try:
                 shutil.move(file_name, new_file_name)
-                log.info(f'File moved: {file_name} --> {new_file_name}', instant_msg=True)
+                log.save_message(f'File moved: {file_name} --> {new_file_name}')
             except:
-                log.info(f'File moved error: {file_name} --> {new_file_name}', instant_msg=True)
+                log.save_message(f'File moved error: {file_name} --> {new_file_name}')
 
     @staticmethod
     def execute(log, drive, work_folder_id, accommodation_list: AccommodationList, contas_pagas: PaidUtilityBillList) -> Tuple[List[UtilityBillOkResponse], List[UtilityBillErrorResponse], List[UtilityBillErrorResponse], List[UtilityBillDuplicatedResponse], List[UtilityBillIgnoredResponse]]:
@@ -37,7 +37,7 @@ class FilesHandler:
             file_id = file['id']
             file_name = file['name']
             complete_file_name = file_name  # SO PARA MANTER A COMPATIBILIDADE
-            log.info(f'Getting file: {file_name}', instant_msg=True)
+            log.save_message(f'Getting file: {file_name}')
 
             file_content = drive.get_file(file_id)
             all_text = PdfExtractorHandler().get_text(file_content)

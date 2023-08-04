@@ -29,6 +29,9 @@ class ProcessPdfApp:
     _expired_list: List[UtilityBillErrorResponse] = None
     _ignored_list: List[UtilityBillIgnoredResponse] = None
     _accommodations_repo: AccommodationRepository = None
+    _qd280_file_id = ''
+    _exports_file_id = ''
+
 
     def __init__(self, drive: IGoogleDriveHandler, log, accommodations_repo: AccommodationRepository, paid_repo: PaidBillRepository, exception_repo: ExceptionRepository):
         ApplicationException.when(log is None, 'Log não iniciado.')
@@ -77,28 +80,25 @@ class ProcessPdfApp:
                     conta_consumo.create(all_text)
                     if conta_consumo.tipo_documento == DocumentTypeEnum.DETALHE_FATURA:
                         self._ignored_list.append(UtilityBillIgnoredResponse(error_type='DETALHE_FATURA', email_file_id=file_id, google_file_id='', file_name=file_name))
-                        self._log.info('===> Detalhe Fatura', instant_msg=True)
                     else:
                         self._in_analise_list.append(UtilityBillOkResponse(email_file_id=file_id, google_file_id='', file_name=file_name,
                                                                            utility_bill=conta_consumo))
-                        self._log.info('===> Accepted', instant_msg=True)
                 except Exception:
                     self._error_list.append(UtilityBillErrorResponse(error_type='ERRO_PROCESSAMENTO_PDF', email_file_id=file_id, google_file_id='',
                                                                      file_name=file_name, utility_bill=conta_consumo))
             else:
                 self._ignored_list.append(UtilityBillIgnoredResponse(error_type='DETALHE_FATURA', email_file_id=file_id, google_file_id='', file_name=file_name))
-                self._log.info('===> Ignored', instant_msg=True)
 
         def get_local_files(email_local_folder: str):
             for file_name in [f.upper() for f in os.listdir(email_local_folder) if os.path.isfile(os.path.join(email_local_folder, f)) and f.upper().endswith('.PDF') == True]:
                 complete_file_name = os.path.join(email_local_folder, file_name)
-                self._log.info(f'Processing file: {complete_file_name}')
+                self._log.save_message(f'Processing file: {complete_file_name}')
 
                 try:
                     all_text = PdfExtractorHandler().get_text(complete_file_name)
                 except:
                     self._ignored_list.append(UtilityBillIgnoredResponse(error_type='PDF_INVALIDO', email_file_id='', google_file_id='', file_name=file_name))
-                    self._log.info('===> Ignored (image)', instant_msg=True)
+                    self._log.save_message('       Ignored (image)')
                     continue
 
                 process_file(all_text, file_name, '')
@@ -112,18 +112,18 @@ class ProcessPdfApp:
                 count = count + 1
                 file_id = file['id']
                 file_name = file['name']
-                #str_aux = 'T_'
-                #if (file_name[0:len(str_aux)].upper() != str_aux):
+                # str_aux = 'T_'
+                # if (file_name[0:len(str_aux)].upper() != str_aux):
                 #    continue
-                #if (count > 15):  break
+                # if (count > 15):  break
 
-                self._log.info(f'Getting file: {file_name} ({file_id}) ({count}/{total})', instant_msg=True)
+                self._log.save_message(f'Getting file: {file_name} ({file_id}) ({count}/{total})')
                 file_content = self._drive.get_file(file_id)
                 try:
                     all_text = PdfExtractorHandler().get_text(file_content)
                 except:
                     self._ignored_list.append(UtilityBillIgnoredResponse(error_type='PDF_INVALIDO', email_file_id=file_id, google_file_id='', file_name=file_name))
-                    self._log.info('===> Ignored (image)', instant_msg=True)
+                    self._log.save_message('       Ignored (image)')
                     continue
 
                 process_file(all_text, file_name, file_id)
@@ -131,9 +131,10 @@ class ProcessPdfApp:
         if email_local_folder:
             get_local_files(email_local_folder)
         else:
-            get_remote_files(work_folder_id)````
-            
-        self._log.info(f'Total files => {self._processed_list``} {self._ignored_list}', instant_msg=True)
+            get_remote_files(work_folder_id)
+
+        self._log.save_message(f'{len(self._in_analise_list)} file(s) to process', execution=True)
+        self._log.save_message(f'{len(self._ignored_list)} skipped file(s)', execution=True)
 
     def _is_duplicate(self, utility_bill) -> bool:
         for file in self._processed_list:
@@ -141,7 +142,7 @@ class ProcessPdfApp:
                 return True
         return False
 
-    def _has_exceptions(self, file) -> bool:
+    def _handler_possible_exception(self, file) -> bool:
         provider_name = self._service_provider_2_str(file.utility_bill.concessionaria)
         excep = self._exception_repo.get(file.utility_bill.id_alojamento, provider_name)
 
@@ -150,10 +151,9 @@ class ProcessPdfApp:
 
         nome_unico = file.utility_bill.nome_calculado
         except_type = excep[0]
-        accomm_destination_list = excep[1]
-        parcela = round(file.utility_bill.valor / len(accomm_destination_list), 2)
-
         if except_type == 1:
+            accomm_destination_list = excep[1]
+            parcela = round(file.utility_bill.valor / len(accomm_destination_list), 2)
             for el in accomm_destination_list:
                 new_file = copy.deepcopy(file)
                 new_file.nome_calculado = nome_unico
@@ -162,11 +162,15 @@ class ProcessPdfApp:
                 new_file.utility_bill.tipo_documento = DocumentTypeEnum.CONTA_CONSUMO_RATEIO
                 new_file.utility_bill.id_alojamento = el
                 self._processed_list.append(new_file)
-        elif except_type == 2:
-            self._error_list.append(UtilityBillErrorResponse(error_type='EXCEPTION_NAO_TRATADA', email_file_id=file.email_file_id, google_file_id='',
-                                                             file_name=file.file_name, utility_bill=file.utility_bill))
-        else:
-            self._error_list.append(UtilityBillErrorResponse(error_type='EXCEPTION_NAO_TRATADA', email_file_id=file.email_file_id, google_file_id='',
+            return True
+
+        if except_type == 2:
+            parcela_fixa = excep[1]
+            file.utility_bill.valor = parcela_fixa
+            file.utility_bill.str_valor = str(parcela_fixa)
+            return False
+
+        self._error_list.append(UtilityBillErrorResponse(error_type='EXCEPTION_NAO_TRATADA', email_file_id=file.email_file_id, google_file_id='',
                                                              file_name=file.file_name, utility_bill=file.utility_bill))
         return True
 
@@ -178,8 +182,6 @@ class ProcessPdfApp:
 
         for file in self._in_analise_list:
             actual_bill = file.utility_bill
-            print(f'Checking {file.file_name}...')
-
             if actual_bill.is_ok() is False:
                 self._error_list.append(UtilityBillErrorResponse(error_type='INFOS_INCOMPLETAS', email_file_id=file.email_file_id, google_file_id='',
                                                                  file_name=file.file_name, utility_bill=actual_bill))
@@ -188,8 +190,8 @@ class ProcessPdfApp:
             # verifica se está duplicada no movimento
             if self._is_duplicate(utility_bill=actual_bill):
                 self._duplicate_list.append(UtilityBillDuplicatedResponse(error_type='ARQUIVO_DUPLICADO', email_file_id=file.email_file_id, google_file_id='',
-                                                                 file_name=file.file_name, utility_bill=actual_bill))
-                
+                                                                          file_name=file.file_name, utility_bill=actual_bill))
+
                 continue
 
             # verifica se a alojamento existe
@@ -212,23 +214,23 @@ class ProcessPdfApp:
             if (actual_bill.dt_vencimento):
                 if accomm_aux.is_valid_start_date(actual_bill.dt_vencimento) is False:
                     self._expired_list.append(UtilityBillErrorResponse(error_type='VCTO_ANTERIOR_DATA_LANCAMENTO', email_file_id=file.email_file_id, google_file_id='',
-                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                                                                       file_name=file.file_name, utility_bill=actual_bill))
                     continue
 
                 if accomm_aux.is_closed(actual_bill.dt_vencimento):
                     self._expired_list.append(UtilityBillErrorResponse(error_type='MES_FECHADO(VCTO)', email_file_id=file.email_file_id, google_file_id='',
-                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                                                                       file_name=file.file_name, utility_bill=actual_bill))
                     continue
 
             elif (actual_bill.dt_emissao):
                 if accomm_aux.is_valid_start_date(actual_bill.dt_emissao) is False:
                     self._expired_list.append(UtilityBillErrorResponse(error_type='EMISSAO_ANTERIOR_DATA_LANCAMENTO', email_file_id=file.email_file_id, google_file_id='',
-                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                                                                       file_name=file.file_name, utility_bill=actual_bill))
                     continue
 
                 if accomm_aux.is_closed(actual_bill.dt_emissao):
                     self._expired_list.append(UtilityBillErrorResponse(error_type='MES_FECHADO(EMISSAO)', email_file_id=file.email_file_id, google_file_id='',
-                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                                                                       file_name=file.file_name, utility_bill=actual_bill))
                     continue
 
             if (actual_bill.tipo_documento == DocumentTypeEnum.NOTA_CREDITO) or (actual_bill.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):
@@ -248,12 +250,10 @@ class ProcessPdfApp:
             # verifica se a conta deve ir para  conciliacao
             actual_bill.is_accounting = accomm_aux.is_must_accounting(actual_bill.tipo_servico)
 
-            # faz o rateio
-            if self._has_exceptions(file):
-                continue
-
-            file.nome_calculado = actual_bill.nome_calculado
-            self._processed_list.append(file)
+            is_rateio = self._handler_possible_exception(file)
+            if is_rateio is False:
+                file.nome_calculado = actual_bill.nome_calculado
+                self._processed_list.append(file)
 
     def _clean_email_folder(self):
         def get_unique_email_id_list() -> List:
@@ -265,15 +265,15 @@ class ProcessPdfApp:
             return unique_list
 
         def delete_file(msg: str, file_id: str):
-            self._log.info(msg, instant_msg=True)
+            self._log.save_message(msg)
             self._drive.delete_file(file_id=file_id)
 
-        self._log.info('Cleaning up email folder', instant_msg=True)
+        self._log.save_message('Cleaning up email folder', execution=True)
         for file_id in get_unique_email_id_list():
             try:
                 delete_file(msg=f'Cleaning processed file {file_id}', file_id=file_id)
             except Exception as error:
-                self._log.info(f'Erro {str(error)}', instant_msg=True)
+                self._log.save_message(f'Erro {str(error)}', error=True)
 
         for file in self._ignored_list:
             delete_file(msg=f'Cleaning ignored file {file.file_name} ({file.email_file_id})', file_id=file.email_file_id)
@@ -281,39 +281,41 @@ class ProcessPdfApp:
         for file in self._duplicate_list:
             delete_file(msg=f'Cleaning duplicated file {file.file_name} ({file.email_file_id})', file_id=file.email_file_id)
 
-
     def _upload_files(self, others_folder_base_id: str) -> None:
         uploader = ResultsUploader(self._log, self._drive)
 
-        self._log.info('Uploading list of processed', instant_msg=True)
-        uploader.upload_ok_list_new(self._processed_list)
-        self._log.info(f'{len(self._processed_list)} file(s) processed', instant_msg=True)
+        if len(self._processed_list) > 0:
+            self._log.save_message('Uploading list of processed', execution=True )
+            uploader.upload_ok_list_new(self._processed_list)
+            self._log.save_message(f'{len(self._processed_list)} file(s) processed', execution=True)
 
-        self._log.info('Uploading list of unprocessed ', instant_msg=True)
         uploader.upload_other_list(others_folder_base_id, self._not_found_list, self._error_list, self._expired_list,  self._duplicate_list, self._ignored_list)
-        self._log.info(f'{len(self._not_found_list)} file(s) without accommodation', instant_msg=True)
-        self._log.info(f'{len(self._error_list)} error file(s)', instant_msg=True)
-        self._log.info(f'{len(self._expired_list)} expired bill file(s)', instant_msg=True)
-        self._log.info(f'{len(self._duplicate_list)} duplicate file(s)', instant_msg=True)
-        self._log.info(f'{len(self._ignored_list)} ignored file(s)', instant_msg=True)
+        self._log.save_message(f'{len(self._not_found_list)} file(s) without accommodation', execution=True)
+        self._log.save_message(f'{len(self._error_list)} error file(s)', execution=True)
+        self._log.save_message(f'{len(self._expired_list)} expired bill file(s)', execution=True)
+        self._log.save_message(f'{len(self._duplicate_list)} duplicate file(s)', execution=True)
+        self._log.save_message(f'{len(self._ignored_list)} ignored file(s)', execution=True)
 
-    def _export_results(self, results_folder_id, exports_folder, qd28_path, paid_bill_path):
+    def  _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, paid_bill_path):
         now = datetime.now()
-        export_filename = f'output_{now.strftime("%Y-%m-%d.%H.%M.%S")}.xlsx'
-        export_filename = os.path.join(exports_folder, export_filename)
+        exports_file_path = os.path.join(temp_dir,  f'output_{now.strftime("%Y-%m-%d.%H.%M.%S")}.xlsx')
+        qd28_file_path = os.path.join(temp_dir,  '#QD28_IMPORTACAO_ROBOT.xlsx')
 
-        self._log.info('Saving the worksheets', instant_msg=True)
+        self._log.save_message('Saving the worksheets', execution=True)
         saver = ResultsSaver(self._log, self._drive)
-        saver.execute(export_filename, qd28_path, paid_bill_path, self._processed_list, self._not_found_list,
+        saver.execute(exports_file_path, qd28_file_path, paid_bill_path, self._processed_list, self._not_found_list,
                       self._error_list,  self._expired_list, self._duplicate_list, self._ignored_list, self._paid_repo.count+1)
 
-        self._log.info('Upload results', instant_msg=True)
         uploader = ResultsUploader(self._log, self._drive)
-        uploader.upload_results(results_folder_id, export_filename)
-        uploader.upload_excelfile(results_folder_id, paid_bill_path, 'historic')
-        uploader.upload_excelfile('1Q1L3zvZZzQ3-BrQdetGU60PY3dGr2ECX', qd28_path, '')
+        self._log.save_message('Upload export file', execution=True)
+        self._exports_file_id = uploader.upload_excelfile(folder_results_id=exports_folder_id, file_path=exports_file_path)
+        if len(self._processed_list) > 0:
+            self._log.save_message('Upload QD28 file', execution=True)
+            self._qd280_file_id = uploader.upload_excelfile(folder_results_id=qd28_folder_id, file_path=qd28_file_path)
+            self._log.save_message('Upload historical payments file', execution=True)
+            uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=paid_bill_path)
 
-    def execute(self, work_folder_id: str, email_local_folder: str, others_folder_base_id: str, results_folder_id: str, qd28_path: str, paid_bill_path: str, exports_folder: str):
+    def execute(self, temp_dir: str, email_local_folder: str,  work_folder_id: str, others_folder_base_id: str, exports_folder_id: str, historic_folder_id: str, qd28_folder_id: str, paid_bill_path: str):
         # Aqui le os arquivos e os separa em com erro, ignorados e em analise
         self._read_files(work_folder_id, email_local_folder)
 
@@ -324,14 +326,17 @@ class ProcessPdfApp:
         self._upload_files(others_folder_base_id)
 
         # Rotina para subir os arquivos de resultados (igual ao antigo)
-        self._export_results(results_folder_id, exports_folder, qd28_path, paid_bill_path)
+        self._export_results(temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, paid_bill_path)
 
         # Rotina para para excluir os emails
         self._clean_email_folder()
 
-        # resumo
-        print(f'Sem alojamentos {len(self._not_found_list)}, OK {len(self._processed_list)}, Ignorados {len(self._ignored_list)}, Erros {len(self._error_list)}, Duplicados {len(self._duplicate_list)} ')
+        # gera resumo do execução
+        qd28_link = self._drive.make_google_link(self._qd280_file_id)
+        exports_link = ''
+        if self._exports_file_id:
+            exports_link = self._drive.make_google_link(self._exports_file_id)
+        self._log.save_message_qd30('tipo_alerta', len(self._processed_list), len(self._error_list), len(self._not_found_list), qd28_link, exports_link)
+        self._log.save_message(f'Sem alojamentos {len(self._not_found_list)}, OK {len(self._processed_list)}, Ignorados {len(self._ignored_list)}, Erros {len(self._error_list)}, Duplicados {len(self._duplicate_list)}, Expirados {len(self._expired_list)}  ', execution=True)
 
-
-# sergiowgt.teste@gmail.com
-# qrsatvqbzwoddmbj
+        return self._not_found_list

@@ -18,11 +18,6 @@ class ResultsSaver:
         self._log = log
         self._drive = drive
 
-    def _make_google_link(self, file_id: str, file_name: str) -> str:
-        #link = f'https://drive.google.com/file/d/{file_id}/view?usp=share_link'
-        #return '=HYPERLINK("{}","{}")'.format(link, file_name)
-        return f'https://drive.google.com/file/d/{file_id}/view?usp=drive_link'
-
     def _create_df_qd28(self, list: List[UtilityBillOkResponse]) -> Any:
         def service_type_2_categoria(id_service_type):
             if id_service_type == ServiceTypeEnum.AGUA:
@@ -48,7 +43,7 @@ class ResultsSaver:
             _dict['#VALOR_S/IVA'] = ''
             _dict['#IVA'] = ''
             _dict['#VALOR_C/IVA'] = str(line.utility_bill.valor).replace('.', ',')
-            _dict['#LINK'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['#LINK'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
             _dict['Data Processamento'] = now.strftime("%Y/%m/%d.%H:%M:%S")
 
@@ -82,7 +77,7 @@ class ResultsSaver:
             _dict['Emissao'] = line.utility_bill.str_emissao
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.nome_calculado)
+            _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
             _dict['Data Processamento'] = now.strftime("%Y/%m/%d.%H:%M:%S")
 
@@ -113,7 +108,7 @@ class ResultsSaver:
             _dict['Emissao'] = line.utility_bill.str_emissao
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
@@ -143,7 +138,7 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo Erro'] = line.error_type
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
@@ -176,7 +171,7 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo'] = line.error_type
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Pago'] = line.original_google_link
             _dict['Arquivo Original'] = line.file_name
 
@@ -211,7 +206,7 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo'] = line.error_type
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
@@ -224,12 +219,12 @@ class ResultsSaver:
         for line in list:
             _dict = {}
             _dict['Tipo Erro'] = line.error_type
-            _dict['Arquivo Google'] = self._make_google_link(line.google_file_id, line.file_name)
+            _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute(self, export_filename: str, qd28_filename: str, database_filename: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse],  expired_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
+    def execute(self, exports_file_path: str, qd28_file_path: str, database_file_path: str, new_ok_list: List[UtilityBillOkResponse], not_found_list: List[UtilityBillErrorResponse], error_list: List[UtilityBillErrorResponse],  expired_list: List[UtilityBillErrorResponse], duplicated_list: List[UtilityBillDuplicatedResponse], ignored_list: List[UtilityBillIgnoredResponse], count_contas_pagas: int):
         new_ok_list.sort(key=lambda x: x.utility_bill.concessionaria)
         not_found_list.sort(key=lambda x: x.utility_bill.concessionaria)
         duplicated_list.sort(key=lambda x: x.utility_bill.concessionaria)
@@ -243,7 +238,10 @@ class ResultsSaver:
         df_ignored = self._create_df_ignored(ignored_list)
         df_qd28 = self._create_df_qd28(new_ok_list)
 
-        with pd.ExcelWriter(export_filename) as writer:
+        if os.path.exists(exports_file_path):
+            os.remove(exports_file_path)
+
+        with pd.ExcelWriter(exports_file_path) as writer:
             df_ok.to_excel(writer, sheet_name='Processados', index=False)
             df_nf.to_excel(writer, sheet_name='Sem Alojamentos', index=False)
             df_error.to_excel(writer, sheet_name='Erros', index=False)
@@ -251,32 +249,24 @@ class ResultsSaver:
             df_duplicated.to_excel(writer, sheet_name='Duplicados', index=False)
             df_ignored.to_excel(writer, sheet_name='Ignorados', index=False)
 
-        if os.path.exists(database_filename) is False:
-            with pd.ExcelWriter(database_filename) as writer:
-                df_ok.to_excel(writer, sheet_name='Database', index=False)
-        else:
-            if len(new_ok_list) > 0:
-                book = load_workbook(database_filename)
-                with pd.ExcelWriter(database_filename) as writer:
-                    writer.book = book
-                    ws = writer.sheets['Database']
+        if os.path.exists(qd28_file_path):
+            os.remove(qd28_file_path)
 
-                    # adiciona o dataframe na planilha excel
-                    for row in df_ok.iterrows():
-                        ws.append(row[1].tolist())
-                    writer.save()
-
-        if os.path.exists(qd28_filename) is False:
-            with pd.ExcelWriter(qd28_filename) as writer:
+        if (len(new_ok_list) > 0):
+            with pd.ExcelWriter(qd28_file_path) as writer:
                 df_qd28.to_excel(writer, sheet_name='Página1', index=False)
-        else:
-            if len(df_qd28) > 0:
-                book = load_workbook(qd28_filename)
-                with pd.ExcelWriter(qd28_filename) as writer:
-                    writer.book = book
-                    ws = writer.sheets['Página1']
 
-                    # adiciona o dataframe na planilha excel
-                    for row in df_qd28.iterrows():
-                        ws.append(row[1].tolist())
-                    writer.save()
+            if os.path.exists(database_file_path) is False:
+                with pd.ExcelWriter(database_file_path) as writer:
+                    df_ok.to_excel(writer, sheet_name='Database', index=False)
+            else:
+                if len(new_ok_list) > 0:
+                    book = load_workbook(database_file_path)
+                    with pd.ExcelWriter(database_file_path) as writer:
+                        writer.book = book
+                        ws = writer.sheets['Database']
+
+                        # adiciona o dataframe na planilha excel
+                        for row in df_ok.iterrows():
+                            ws.append(row[1].tolist())
+                        writer.save()

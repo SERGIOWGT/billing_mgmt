@@ -24,11 +24,13 @@ class ExceptionRepository:
             except_type = row[expected_columns[2]]
             nome_concessionaria = row[expected_columns[1]]
             accommodations_name_out = row[expected_columns[3]]
-            if except_type != 2:
+            if except_type == 2:
+                valor = row[expected_columns[4]]
+                self._exceptions[(accommodation_name_in, nome_concessionaria)] = (except_type, valor)
+            else:
                 vet_accommodations = accommodations_name_out.split(';')
-            ApplicationException.when(len(vet_accommodations) == 0, f'O alojamento "{accommodation_name_in}" esta com registro de exceção incompativel. [{accommodations_name_out}]')
-
-            self._exceptions[(accommodation_name_in, nome_concessionaria)] = (except_type, vet_accommodations)
+                ApplicationException.when(len(vet_accommodations) == 0, f'O alojamento "{accommodation_name_in}" esta com registro de exceção incompativel. [{accommodations_name_out}]')
+                self._exceptions[(accommodation_name_in, nome_concessionaria)] = (except_type, vet_accommodations)
 
     def get(self, accomm_id: str, service_provider_name: str)  -> Any:
         x = self._exceptions.get((accomm_id, service_provider_name), None)

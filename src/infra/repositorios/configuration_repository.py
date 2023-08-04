@@ -10,6 +10,10 @@ class ConfigurationRepository:
     def __init__(self):
         self._configurations = {}
 
+    def number_of_configs(self) -> int:
+        return len(self._configurations)
+
+
     def get_key(self, key: str) -> str:
         return self._configurations.get(key, '')
 

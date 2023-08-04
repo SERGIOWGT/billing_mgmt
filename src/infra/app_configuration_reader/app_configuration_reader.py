@@ -2,10 +2,9 @@ import json
 import os
 from dataclasses import dataclass
 from src.infra.exception_handler import ApplicationException
-from src.infra.app_configuration_reader.iapp_configuration_reader import IAppConfigurationReader
 
 @dataclass
-class AppConfigurationReader (IAppConfigurationReader):
+class AppConfigurationReader ():
     _dict_config = {}
 
     def __init__(self, file_name: str):

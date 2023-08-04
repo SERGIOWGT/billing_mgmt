@@ -30,8 +30,6 @@ class AccommodationRepository:
             return ServiceProviderEnum.GOLDEN_ENERGY
         if (name == '#EPAL'):
             return ServiceProviderEnum.EPAL
-        if (name == 'EPAL'):
-            return ServiceProviderEnum.EPAL
         if (name == '#NOS'):
             return ServiceProviderEnum.NOS
         if (name == 'NOS'):
@@ -42,12 +40,17 @@ class AccommodationRepository:
     def __init__(self):
         self._accommodations = []
 
+    def number_of_accommodations(self)->int:
+        return len(self._accommodations)
+
     def _get_providers_name(self, df) -> List[str]:
         columns = []
         for name, value in df.iteritems():
             # a = 0
             if len(name) > 1 and name[0] == '#':
-                columns.append(name)
+                name = name.strip()
+                if (name != '#UTILITIES'):
+                    columns.append(name)
         return columns
 
     def from_excel(self, stream_file: Any) -> None:
@@ -102,36 +105,54 @@ class AccommodationRepository:
             id_alojamento = df.iat[row, 1]
             if id_alojamento is None:
                 continue
-            
+
             folder_id = df.iat[row, 7]
             if (folder_id):
                 folder_id = str(folder_id).replace('https://drive.google.com/drive/folders/', '')
                 folder_id = folder_id.replace('?usp=drive_link', '')
+            else:
+                folder_id = ''
 
             folder_accounting_id = df.iat[row, 8]
             if (folder_accounting_id):
                 folder_accounting_id = str(folder_accounting_id).replace('https://drive.google.com/drive/folders/', '')
                 folder_accounting_id = folder_accounting_id.replace('?usp=drive_link', '')
+            else:
+                folder_accounting_id = ''
+
+            folder_setup_id = df.iat[row, 9]
+            if (folder_setup_id):
+                folder_setup_id = str(folder_accounting_id).replace('https://drive.google.com/drive/folders/', '')
+                folder_setup_id = folder_accounting_id.replace('?usp=drive_link', '')
+            else:
+                folder_setup_id = ''
 
             start_date = df.iat[row, 2]
             if (isinstance(start_date, datetime) is False):
                 start_date = datetime(2050, 1, 1)
 
             status_fecho = temp_estado_fecho[id_alojamento]
-            acc_aux = Accommodation2(id=df.iat[row, 1], start_date=start_date, nif_title=df.iat[row, 3], folder_id=folder_id,
-                                     folder_accounting_id=folder_accounting_id, line=line, status_fecho=status_fecho)
+            acc_aux = Accommodation2(id=df.iat[row, 1],
+                                     start_date=start_date,
+                                     nif_title=df.iat[row, 3],
+                                     folder_id=folder_id,
+                                     folder_accounting_id=folder_accounting_id,
+                                     folder_setup_id=folder_setup_id,
+                                     line=line, 
+                                     status_fecho=status_fecho)
             acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.AGUA, df.iat[row, 4]))
             acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.TELECOM, df.iat[row, 5]))
             acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.LUZ, df.iat[row, 6]))
 
+            first_col_id=10
             for indx, name in enumerate(providers_name):
-                cliente = get_el(str(df.iat[row, 9 + (7 * indx)]))
-                conta = get_el(str(df.iat[row, 10 + (7 * indx)]))
-                contrato = get_el(str(df.iat[row, 11 + (7 * indx)]))
-                local_consumo = get_el(str(df.iat[row, 12 + (7 * indx)]))
-                instalacao = get_el(str(df.iat[row, 13 + (7 * indx)]))
-                referencia = get_el(str(df.iat[row, 14 + (7 * indx)]))
-                servico = get_el(str(df.iat[row, 15 + (7 * indx)]))
+                cliente = get_el(str(df.iat[row, first_col_id + (7 * indx)]))
+                conta = get_el(str(df.iat[row, (first_col_id+1) + (7 * indx)]))
+                contrato = get_el(str(df.iat[row, (first_col_id+2) + (7 * indx)]))
+                local_consumo = get_el(str(df.iat[row, (first_col_id+3) + (7 * indx)]))
+                instalacao = get_el(str(df.iat[row, (first_col_id+4) + (7 * indx)]))
+                referencia = get_el(str(df.iat[row, (first_col_id+5) + (7 * indx)]))
+                servico = get_el(str(df.iat[row, (first_col_id+6) + (7 * indx)]))
 
                 contract_aux = Contract(id_service_provide=self._str_2_provider(name),
                                         cliente=cliente,

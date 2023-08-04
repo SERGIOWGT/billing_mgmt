@@ -2,23 +2,21 @@ import base64
 import datetime
 import email
 from dataclasses import dataclass
-
-import imaplib
 from mailbox import Message
 import os
 import quopri
 import re
 from typing import List
 import random
-
-from .Imail_handler import IEmailHandler
+import pathlib
+import imaplib
 from src.infra.exception_handler import ApplicationException
 
 @dataclass
-class EmailHandler(IEmailHandler):
+class EmailReaderHandler():
     imap_session: imaplib.IMAP4_SSL = None
 
-    def logout(self)->None:
+    def logout(self) -> None:
         self.imap_session.logout()
 
     def login(self, host: str, user_name: str, password: str, use_ssl: True) -> None:
@@ -35,7 +33,7 @@ class EmailHandler(IEmailHandler):
         self.imap_session = imaplib.IMAP4_SSL(host)
         self.imap_session.ssl = use_ssl
 
-        (result, account_details) = self.imap_session.login(user_name, password)
+        (result, _) = self.imap_session.login(user_name, password)
         ApplicationException.when(result != 'OK', 'Not able to sign in!')
 
     def get_messages_id(self, folder: str)->List[int]:
@@ -117,6 +115,10 @@ class EmailHandler(IEmailHandler):
                 att_name = att_name.upper()
 
             att_name = att_name.replace(' ', '_')
+            file_extension = pathlib.Path(att_name).suffix
+            if file_extension.upper() != '.PDF':
+                continue
+
             att_name = att_name.replace('.PDF', '')
             att_file_name = f"{timestamp}_{file_number}_from_{att_name}.PDF"
             file_number = file_number + 1

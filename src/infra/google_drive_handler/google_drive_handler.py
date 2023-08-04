@@ -24,6 +24,25 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         http = credentials.authorize(Http())
         self._drive = discovery.build('drive', 'v3', http=http)
 
+    def folder_exists(self, folder_id: str)->bool:
+        if not folder_id:
+            return False
+
+        ret = True
+        try:
+            _ = self.get_service().files().get(fileId=folder_id, fields='id').execute()
+        except:
+            ret = False
+        return ret
+
+    def extract_id_from_link(self, url: str)->str:
+        if not url:
+            return ''
+
+        folder_id = url.replace('https://drive.google.com/drive/folders/', '')
+        folder_id = folder_id.replace('https://drive.google.com/drive/u/1/folders/', '')
+        return folder_id.replace('?usp=drive_link', '')
+
     def get_file(self, file_id: str):
         request = self.get_service().files().get_media(fileId=file_id)
         fh = io.BytesIO()
@@ -112,5 +131,7 @@ class GoogleDriveHandler (IGoogleDriveHandler):
     def delete_file(self, file_id):
         return self.get_service().files().delete(fileId=file_id).execute()
 
-
+    def make_google_link(self, file_id: str) -> str:
+        return f'https://drive.google.com/file/d/{file_id}/view?usp=drive_link'
+    
 # drive = GoogleDriveHandler('./credentials')

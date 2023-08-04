@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from src.infra.email_handler.Imail_handler import IEmailHandler
+from src.infra.email_handler.Iemail_reader_handler import IEmailHandler
 from email.utils import parsedate_to_datetime
 
 
@@ -20,7 +20,7 @@ class AttachmentDownloader:
                 # email.move(message_uid, output_email_folder)
 
                 for file_name in file_list:
-                    log.info(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.', instant_msg=True)
+                    log.save_message(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.')
 
                 all_files.extend(file_list)
                 break
