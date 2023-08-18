@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import copy
-from datetime import datetime
+import datetime
 import os
 from typing import List
 from src.domain.entities.response_error import UtilityBillDuplicatedResponse, UtilityBillErrorResponse, UtilityBillIgnoredResponse, UtilityBillOkResponse
@@ -24,6 +24,7 @@ class ProcessPdfApp:
     _log = None
     _in_analise_list = None
     _processed_list = None
+    _setup_list: List[UtilityBillErrorResponse] = None
     _not_found_list: List[UtilityBillErrorResponse] = None
     _error_list: List[UtilityBillErrorResponse] = None
     _expired_list: List[UtilityBillErrorResponse] = None
@@ -31,20 +32,30 @@ class ProcessPdfApp:
     _accommodations_repo: AccommodationRepository = None
     _qd280_file_id = ''
     _exports_file_id = ''
-
+    _all_lists = []
 
     def __init__(self, drive: IGoogleDriveHandler, log, accommodations_repo: AccommodationRepository, paid_repo: PaidBillRepository, exception_repo: ExceptionRepository):
         ApplicationException.when(log is None, 'Log não iniciado.')
         ApplicationException.when(drive is None, 'Google Drive não iniciado.', log)
         self._drive = drive
         self._log = log
-        self._processed_list = []
         self._in_analise_list = []
+        self._processed_list = []
         self._error_list = []
         self._ignored_list = []
         self._not_found_list = []
         self._duplicate_list = []
         self._expired_list = []
+        self._setup_list = []
+        self._all_lists = {}
+        self._all_lists['processed_list'] = self._processed_list
+        self._all_lists['error_list'] = self._error_list
+        self._all_lists['not_found_list'] = self._not_found_list
+        self._all_lists['ignored_list'] = self._ignored_list
+        self._all_lists['duplicate_list'] = self._duplicate_list
+        self._all_lists['expired_list'] = self._expired_list
+        self._all_lists['setup_list'] = self._setup_list
+
         self._accommodations_repo = accommodations_repo
         self._paid_repo = paid_repo
         self._exception_repo = exception_repo
@@ -87,7 +98,7 @@ class ProcessPdfApp:
                     self._error_list.append(UtilityBillErrorResponse(error_type='ERRO_PROCESSAMENTO_PDF', email_file_id=file_id, google_file_id='',
                                                                      file_name=file_name, utility_bill=conta_consumo))
             else:
-                self._ignored_list.append(UtilityBillIgnoredResponse(error_type='DETALHE_FATURA', email_file_id=file_id, google_file_id='', file_name=file_name))
+                self._ignored_list.append(UtilityBillIgnoredResponse(error_type='NAO_E_CONTA_CONSUMO', email_file_id=file_id, google_file_id='', file_name=file_name))
 
         def get_local_files(email_local_folder: str):
             for file_name in [f.upper() for f in os.listdir(email_local_folder) if os.path.isfile(os.path.join(email_local_folder, f)) and f.upper().endswith('.PDF') == True]:
@@ -112,9 +123,9 @@ class ProcessPdfApp:
                 count = count + 1
                 file_id = file['id']
                 file_name = file['name']
-                # str_aux = 'T_'
-                # if (file_name[0:len(str_aux)].upper() != str_aux):
-                #    continue
+                #str_aux = '_'
+                #if (file_name[0:len(str_aux)].upper() != str_aux):
+                #   continue
                 # if (count > 15):  break
 
                 self._log.save_message(f'Getting file: {file_name} ({file_id}) ({count}/{total})')
@@ -210,28 +221,26 @@ class ProcessPdfApp:
             actual_bill.id_alojamento = accomm_aux._id
             actual_bill.folder_id = accomm_aux._folder_id
             actual_bill.folder_accounting_id = accomm_aux._folder_accounting_id.strip()
-            # se a conta é anterior a data de lancamento
-            if (actual_bill.dt_vencimento):
-                if accomm_aux.is_valid_start_date(actual_bill.dt_vencimento) is False:
-                    self._expired_list.append(UtilityBillErrorResponse(error_type='VCTO_ANTERIOR_DATA_LANCAMENTO', email_file_id=file.email_file_id, google_file_id='',
-                                                                       file_name=file.file_name, utility_bill=actual_bill))
-                    continue
+            actual_bill.folder_setup_id = accomm_aux._folder_setup_id.strip()
 
-                if accomm_aux.is_closed(actual_bill.dt_vencimento):
-                    self._expired_list.append(UtilityBillErrorResponse(error_type='MES_FECHADO(VCTO)', email_file_id=file.email_file_id, google_file_id='',
-                                                                       file_name=file.file_name, utility_bill=actual_bill))
-                    continue
+            _work_date = actual_bill.dt_vencimento if actual_bill.dt_vencimento else actual_bill.dt_emissao
+            if accomm_aux.in_setup(_work_date):
+                self._setup_list.append(UtilityBillErrorResponse(error_type='EM_SETUP', email_file_id=file.email_file_id, google_file_id='',
+                                                                    file_name=file.file_name, utility_bill=actual_bill))
+                continue
 
-            elif (actual_bill.dt_emissao):
-                if accomm_aux.is_valid_start_date(actual_bill.dt_emissao) is False:
-                    self._expired_list.append(UtilityBillErrorResponse(error_type='EMISSAO_ANTERIOR_DATA_LANCAMENTO', email_file_id=file.email_file_id, google_file_id='',
-                                                                       file_name=file.file_name, utility_bill=actual_bill))
-                    continue
+            if accomm_aux.is_terminated(_work_date):
+                self._expired_list.append(UtilityBillErrorResponse(error_type='CONTRATO_ENCERRADO', email_file_id=file.email_file_id, google_file_id='',
+                                                                   file_name=file.file_name, utility_bill=actual_bill))
+                continue
 
-                if accomm_aux.is_closed(actual_bill.dt_emissao):
-                    self._expired_list.append(UtilityBillErrorResponse(error_type='MES_FECHADO(EMISSAO)', email_file_id=file.email_file_id, google_file_id='',
-                                                                       file_name=file.file_name, utility_bill=actual_bill))
-                    continue
+            # verifica se está pago
+            paid = self._paid_repo.get(actual_bill.concessionaria, actual_bill.tipo_servico, actual_bill.id_alojamento, actual_bill.id_documento)
+            if paid:
+                dupl = UtilityBillDuplicatedResponse(error_type='CONTA_JA_RECEBIDA_E_ARQUIVADA', original_google_link=paid.original_file_id, email_file_id=file.email_file_id, google_file_id='',
+                                                    file_name=file.file_name, utility_bill=actual_bill)
+                self._duplicate_list.append(dupl)
+                continue
 
             if (actual_bill.tipo_documento == DocumentTypeEnum.NOTA_CREDITO) or (actual_bill.tipo_documento == DocumentTypeEnum.FATURA_ZERADA):
                 if (actual_bill.dt_emissao is None):
@@ -239,21 +248,19 @@ class ProcessPdfApp:
                                                                      file_name=file.file_name, utility_bill=actual_bill))
                     continue
 
-            # verifica se está pago
-            paid = self._paid_repo.get(actual_bill.concessionaria, actual_bill.tipo_servico, actual_bill.id_alojamento, actual_bill.id_documento)
-            if paid:
-                dupl = UtilityBillDuplicatedResponse(error_type='CONTA_JA_PAGA', original_google_link=paid.original_file_id, email_file_id=file.email_file_id, google_file_id='',
-                                                     file_name=file.file_name, utility_bill=actual_bill)
-                self._duplicate_list.append(dupl)
-                continue
-
             # verifica se a conta deve ir para  conciliacao
             actual_bill.is_accounting = accomm_aux.is_must_accounting(actual_bill.tipo_servico)
 
             is_rateio = self._handler_possible_exception(file)
-            if is_rateio is False:
-                file.nome_calculado = actual_bill.nome_calculado
-                self._processed_list.append(file)
+            if is_rateio:
+                continue
+
+            if accomm_aux.is_closed(_work_date):
+                file.dt_filing = datetime.date.today()
+            else:
+                file.dt_filing = None
+            file.nome_calculado = actual_bill.nome_calculado
+            self._processed_list.append(file)
 
     def _clean_email_folder(self):
         def get_unique_email_id_list() -> List:
@@ -280,31 +287,39 @@ class ProcessPdfApp:
 
         for file in self._duplicate_list:
             delete_file(msg=f'Cleaning duplicated file {file.file_name} ({file.email_file_id})', file_id=file.email_file_id)
+            
+        for file in self._setup_list:
+            delete_file(msg=f'Cleaning setup file {file.file_name} ({file.email_file_id})', file_id=file.email_file_id)
 
     def _upload_files(self, others_folder_base_id: str) -> None:
         uploader = ResultsUploader(self._log, self._drive)
 
         if len(self._processed_list) > 0:
             self._log.save_message('Uploading list of processed', execution=True )
-            uploader.upload_ok_list_new(self._processed_list)
+            uploader.upload_ok_list(self._processed_list)
             self._log.save_message(f'{len(self._processed_list)} file(s) processed', execution=True)
+            
+        if len(self._setup_list) > 0:
+            self._log.save_message('Uploading list in setup', execution=True)
+            uploader.upload_setup_list(self._setup_list)
+            self._log.save_message(f'{len(self._setup_list)} file(s) processed', execution=True)
 
-        uploader.upload_other_list(others_folder_base_id, self._not_found_list, self._error_list, self._expired_list,  self._duplicate_list, self._ignored_list)
+        uploader.upload_other_list(others_folder_base_id, self._all_lists)
         self._log.save_message(f'{len(self._not_found_list)} file(s) without accommodation', execution=True)
         self._log.save_message(f'{len(self._error_list)} error file(s)', execution=True)
         self._log.save_message(f'{len(self._expired_list)} expired bill file(s)', execution=True)
         self._log.save_message(f'{len(self._duplicate_list)} duplicate file(s)', execution=True)
         self._log.save_message(f'{len(self._ignored_list)} ignored file(s)', execution=True)
 
-    def  _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, paid_bill_path):
-        now = datetime.now()
-        exports_file_path = os.path.join(temp_dir,  f'output_{now.strftime("%Y-%m-%d.%H.%M.%S")}.xlsx')
-        qd28_file_path = os.path.join(temp_dir,  '#QD28_IMPORTACAO_ROBOT.xlsx')
+    def _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, paid_bill_path):
+        now = datetime.datetime.now()
+        str_datetime = now.strftime("%Y-%m-%d_%H_%M_%S")
+        exports_file_path = os.path.join(temp_dir,  f'OUTPUT_SAVED_AT_{str_datetime}.xlsx')
+        qd28_file_path = os.path.join(temp_dir,  f'#QD28_IMPORTACAO_ROBOT_SAVED_AT_{str_datetime}.xlsx')
 
         self._log.save_message('Saving the worksheets', execution=True)
         saver = ResultsSaver(self._log, self._drive)
-        saver.execute(exports_file_path, qd28_file_path, paid_bill_path, self._processed_list, self._not_found_list,
-                      self._error_list,  self._expired_list, self._duplicate_list, self._ignored_list, self._paid_repo.count+1)
+        saver.execute(exports_file_path, qd28_file_path, paid_bill_path, self._all_lists)
 
         uploader = ResultsUploader(self._log, self._drive)
         self._log.save_message('Upload export file', execution=True)
@@ -313,13 +328,13 @@ class ProcessPdfApp:
             self._log.save_message('Upload QD28 file', execution=True)
             self._qd280_file_id = uploader.upload_excelfile(folder_results_id=qd28_folder_id, file_path=qd28_file_path)
             self._log.save_message('Upload historical payments file', execution=True)
-            uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=paid_bill_path)
+            uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=paid_bill_path, save_previous=True)
 
     def execute(self, temp_dir: str, email_local_folder: str,  work_folder_id: str, others_folder_base_id: str, exports_folder_id: str, historic_folder_id: str, qd28_folder_id: str, paid_bill_path: str):
         # Aqui le os arquivos e os separa em com erro, ignorados e em analise
         self._read_files(work_folder_id, email_local_folder)
 
-        # Criar uma rotina que pega os arquivos em análise e joga nas listas corretas od já pagos, duplicados, com erro, e nos avisos do clovis
+        # Criar uma rotina que pega os arquivos em análise e joga nas listas corretas od já recebidos e arquivados, duplicados, com erro, e nos avisos do clovis
         self._check_utilities_bill()
 
         # Rotina para subir os arquivos das contas(igual do antigo)

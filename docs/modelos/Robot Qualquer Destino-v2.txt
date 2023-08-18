@@ -1,0 +1,70 @@
+title Funcionamento Robot Qualquer Destino
+
+participant App
+participant Processor PDF App
+participant Google Drive Adapter
+App->Processor PDF App:Envia id dos diretórios do google drive e os repositórios
+    group LE ARQUIVOS DO DIRETÓRIO DE TRABALHO DO GOOGLE DRIVE E SEPARA ARQUIVOS
+          loop Para cada arquivo no diretório de trabalho
+          
+            Processor PDF App<<-Google Drive Adapter:Recebe um arquivo
+            alt Não é um arquivo PDF ou é uma imagem
+                Processor PDF App->>Processor PDF App:Salva na lista de Arquivos Ignorados (MSG=PDF_INVALIDO)
+            else Não tem os marcadores das contas de consumo
+                Processor PDF App->>Processor PDF App:Salva na lista de Arquivos Ignorados (MSG=NAO_E_CONTA_CONSUMO)
+			else É uma conta de consumo mas tem algum problema ainda não tratado
+                Processor PDF App->>Processor PDF App:Salva na lista de Arquivos com Erro (MSG=ERRO_PROCESSAMENTO_PDF)
+			else Está tudo OK
+                Processor PDF App->>Processor PDF App:Salva conta na lista para processamento
+            end
+          end
+    end
+    group PROCESSA CONTAS DE CONSUMO
+    	loop Para cada item da lista para processamento
+          alt Não consegue interpretar a conta de consumo
+                Processor PDF App->>Processor PDF App:Salva na lista de Contas com Erros (MSG=INFOS_INCOMPLETAS)
+		  else Não existe esse alojamento
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Alojamentos Desconhecidos
+          else Alojamento em Setup
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Contas com Erros (MSG=ALOJAMENTO_INEXISTENTE)
+            else Conta já foi processada e arquivada
+                Processor PDF App->>Processor PDF App:Salva conta na lista de contas Duplicadas (MSG=CONTA_JA_RECEBIDA_E_ARQUIVADA)
+ 			else É uma NOTA DE CRÉDITO ou uma FATURA ZERADA sem data de emissão
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Arquivos com Erro (MSG=NC_OU_FATURA_ZERADA_SEM_DT_EMISSAO)
+
+            else É uma exceção tipo 1(Rateio)
+                Processor PDF App->>Processor PDF App:Faz rateio e salva contas na lista de Contas OK
+            else É uma exceção tipo 2(Valor fixo)
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Contas OK
+            else Está tudo OK
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Contas OK
+            end
+        end
+    end
+    group UPLOAD ARQUIVOS OK
+    	loop PARA CADA ARQUIVO
+      		Processor PDF App->Processor PDF App: Monta o nome do arquivo conforme convencionado
+        	Processor PDF App->>Google Drive Adapter: Salva no diretório do alojamento do primeiro mes aberto
+        	alt Salva no conciliação
+              Processor PDF App->>Google Drive Adapter:Salva no diretório de conciliação do primeiro mes aberto
+        	end
+      	end
+    end
+    group UPLOAD ARQUIVOS COM ERROS 
+    	loop PARA CADA ARQUIVO
+        	 Processor PDF App->>Google Drive Adapter: Salva no diretório de arquivos com problemas
+      end
+    end
+    group EXPORTA RESULTADOS
+    	Processor PDF App->>Processor PDF App: Monta arquivo com o resultado da execução (export.xlsx)
+    	Processor PDF App->>Google Drive Adapter:Salva no diretório de resultados
+    	Processor PDF App->>Processor PDF App: atualiza o arquivo com histórico de contas pagas (historico)
+    	Processor PDF App->>Google Drive Adapter: Salva no diretório de histórico
+    	Processor PDF App->>Processor PDF App: Monta arquivo com o resultado da execução (QD28.xlsx)
+    	Processor PDF App->>Google Drive: Salva no diretório de arquivos QD28
+    end
+    group LIMPA ARQUIVOS PROCESSADOS E IGNORADOS
+        Processor PDF App->>Processor PDF App: Exclui os arquivos que foram processados ou foram ignorados
+    end
+App<--Processor PDF App:List of accommodations not found
+

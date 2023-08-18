@@ -41,14 +41,17 @@ class App:
         ApplicationException.when(self._drive.folder_exists(folder_id) is False, f'Folder not found. [{key}]', self._log)
         return folder_id
 
-    def __init__(self, log, accommodation_fileid: str, config_path: str, local_work_path: str, paid_bill_path: str):
+    def __init__(self, log, drive: GoogleDriveHandler, accommodation_fileid: str, local_work_path: str, paid_bill_path: str):
+        accommodation_fileid = accommodation_fileid or ''
         ApplicationException.when(accommodation_fileid == '', "'accommodation_fileid' does not exist or empty.", log)
-        log.save_message('Connecting google drive....', execution=True)
-        self._drive  = GoogleDriveHandler(config_path)
+        ApplicationException.when(not os.path.exists(local_work_path), "'local_work_path' does not exist or empty.", log)
+        ApplicationException.when(not os.path.exists(paid_bill_path), "'paid_bill_path' does not exist or empty.", log)
 
+        self._drive = drive
         self._log = log
         self._local_work_path = local_work_path
         self._paid_bill_path = paid_bill_path
+        self._accommodation_fileid = accommodation_fileid
 
         log.save_message('Getting config information...', execution=True)
         self._config_repository = self._get_config_repository(accommodation_fileid)
@@ -59,7 +62,6 @@ class App:
         self._smtp_server = self._get_remote_info('gmail.smtp.server')
         self._user = self._get_remote_info('gmail.user')
         self._password = self._get_remote_info('gmail.password')
-        self._accommodation_fileid = accommodation_fileid
 
     def _get_remote_info(self, key) -> str:
         value = self._config_repository.get_key(key)
@@ -84,28 +86,38 @@ class App:
                 subject += '- SEM REGISTROS'
                 body = 'SEM REGISTROS'
             else:
-                body += '\n\n'
-                for indx, msg in enumerate(list):
-                    body += f'{indx+1}) {msg} \n'
+                for indx_warn, reg in enumerate(list):
+                    body += '\n\n'
+                    title = reg[0]
+                    lines = reg[1]
+                    body += f'{indx_warn+1}) {title} \n'
+                    for indx, msg in enumerate(lines):
+                        body += f'{indx_warn+1}.{indx+1}) {msg} \n'
+
                 body += '\n\nFIM DO RELATÓRIO'
 
-            email_sender.send('robotqd23@gmail.com', _to, subject, body)
+            for email_address in _to.split(','):
+                email_sender.send('robotqd23@gmail.com', email_address, subject, body)
 
             return subject, body
 
-        email_list = self._get_remote_info('warning.email.list')
-        #email_list = 'financeiro@qualquerdestino.com'
         email_sender = EmailSenderHandler(host=self._smtp_server, user_name=self._user, password=self._password)
-        msg_list = [f'{self._drive.make_google_link(x.google_file_id)}' for x in not_found_list]
-        __send(msg_list, email_list, "[ROBOT] FATURAS SEM ALOJAMENTOS", 'LISTA DE FATURAS SEM ALOJAMENTOS')
+        email_body = []
+        if len(not_found_list)>0:
+            email_body.append(('LISTA DE FATURAS SEM ALOJAMENTOS', [f'{self._drive.make_google_link(x.google_file_id)}' for x in not_found_list]))
 
         paid_repo = PaidBillRepository()
         paid_repo.from_excel(self._paid_bill_path)
         erro1 = paid_repo.get_last_discontinuous_period()
-        __send(erro1, email_list, "[ROBOT] PAGAMENTOS COM DESCONTINUIDADE", 'LISTA DE ALOJAMENTOS COM DESCONTINUIDADE NOS PAGAMENTOS')
-
         erro2 = paid_repo.get_possible_faults()
-        __send(erro2, email_list, "[ROBOT] FATURAS AINDA NÃO RECEBIDAS", 'LISTA DE ALOJAMENTOS FATURAS PENDENTES')
+        if len(erro1) > 0:
+            email_body.append(('ALOJAMENTOS COM DESCONTINUIDADE NO RECEBIMENTO DAS CONTAS', erro1))
+
+        if len(erro2) > 0:
+            email_body.append(('ALOJAMENTOS COM CONTAS PENDENTES (EMISSÃO DA CONTA >= 30 QUE DIAS CORRIDOS)', erro2))
+
+        email_list = self._get_remote_info('warning.email.list')
+        __send(email_body, email_list, "[ROBOT] AVISOS DE EXECUCÃO", '')
 
     def _process_files(self):
         def _validate_folder(key):
@@ -149,4 +161,5 @@ class App:
     def execute(self):
         self._get_emails()
         not_found_list = self._process_files()
+        not_found_list = []
         self._send_warnings(not_found_list)

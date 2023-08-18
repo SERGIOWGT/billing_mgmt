@@ -1,0 +1,26 @@
+title Robot sequence diagram - Zero Level
+
+participant Main
+participant App
+participant Email App
+participant Processor PDF App
+
+Main-->Main: Cria o componente  Google Drive Adapter
+Main-->Main:Pega o id google da planilha de alojamentos do arquivo de configuração local (config.json)
+Main->App:Envia id da planilha de alojamentos e o Google Drive Adapter
+App-->App:Pega as configurações de email da planilha de alojamentos
+App->Email App:Envia configurações para conexão com o Gmail
+Email App-->Email App: Conecta com o Gmail
+Email App-->Email App: Baixa os emails da caixa de entrada
+Email App-->Email App:Salva os arquivos em anexo no diretório de trabalho no Google Drive
+Email App-->Email App:Move emails lidos para diretório de backup (PROCESSADOS)
+App<--Email App:
+App-->App:Pega infos dos diretórios do google drive do arquivo de alojamentos
+App-->App:Monta repositório de alojamentos
+App-->App:Monta repositório de exceçöes
+App->Processor PDF App:Envia id dos diretorios do  google drive e os repositórios
+App<--Processor PDF App:Lista de alojamentos não encontrados
+App-->App:Pega a lista de destinatários do email de aviso
+App<--App:Monta o email de aviso
+App-->App:Envia o email de aviso para cada destinatário
+Main<--App:

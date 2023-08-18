@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Any
 import io
-import pandas as pd
 from datetime import datetime
+import pandas as pd
 from src.domain.enums.service_type_enum import ServiceTypeEnum
 from src.infra.repositorios.classes import Accommodation2, Contract, ServiceTypeStatus
 from src.domain.enums.service_provider_enum import ServiceProviderEnum
@@ -56,6 +56,14 @@ class AccommodationRepository:
     def from_excel(self, stream_file: Any) -> None:
         def get_el(value):
             return '' if value == 'None' else value
+        
+        def get_folder_id(link: str)->str:
+            ret = ''
+            if (link):
+                ret = str(link).replace('https://drive.google.com/drive/folders/', '')
+                ret = str(ret).replace('https://drive.google.com/drive/u/0/folders/', '')
+                ret = ret.replace('?usp=drive_link', '')
+            return ret
 
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name="#ESTADO_FECHO")
         df = df_.where(pd.notnull(df_), None)
@@ -106,45 +114,33 @@ class AccommodationRepository:
             if id_alojamento is None:
                 continue
 
-            folder_id = df.iat[row, 7]
-            if (folder_id):
-                folder_id = str(folder_id).replace('https://drive.google.com/drive/folders/', '')
-                folder_id = folder_id.replace('?usp=drive_link', '')
-            else:
-                folder_id = ''
-
-            folder_accounting_id = df.iat[row, 8]
-            if (folder_accounting_id):
-                folder_accounting_id = str(folder_accounting_id).replace('https://drive.google.com/drive/folders/', '')
-                folder_accounting_id = folder_accounting_id.replace('?usp=drive_link', '')
-            else:
-                folder_accounting_id = ''
-
-            folder_setup_id = df.iat[row, 9]
-            if (folder_setup_id):
-                folder_setup_id = str(folder_accounting_id).replace('https://drive.google.com/drive/folders/', '')
-                folder_setup_id = folder_accounting_id.replace('?usp=drive_link', '')
-            else:
-                folder_setup_id = ''
+            folder_id = get_folder_id(df.iat[row, 8])
+            folder_accounting_id = get_folder_id(df.iat[row, 9])
+            folder_setup_id = get_folder_id(df.iat[row, 10])
 
             start_date = df.iat[row, 2]
             if (isinstance(start_date, datetime) is False):
                 start_date = datetime(2050, 1, 1)
 
+            end_date = df.iat[row, 3]
+            if (isinstance(end_date, datetime) is False):
+                end_date = datetime(2050, 1, 1)
+
             status_fecho = temp_estado_fecho[id_alojamento]
             acc_aux = Accommodation2(id=df.iat[row, 1],
                                      start_date=start_date,
-                                     nif_title=df.iat[row, 3],
+                                     end_date=end_date,
+                                     nif_title=df.iat[row, 4],
                                      folder_id=folder_id,
                                      folder_accounting_id=folder_accounting_id,
                                      folder_setup_id=folder_setup_id,
-                                     line=line, 
+                                     line=line,
                                      status_fecho=status_fecho)
-            acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.AGUA, df.iat[row, 4]))
-            acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.TELECOM, df.iat[row, 5]))
-            acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.LUZ, df.iat[row, 6]))
+            acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.AGUA, df.iat[row, 5]))
+            acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.TELECOM, df.iat[row, 6]))
+            acc_aux.add_service_type(ServiceTypeStatus(ServiceTypeEnum.LUZ, df.iat[row, 7]))
 
-            first_col_id=10
+            first_col_id=11
             for indx, name in enumerate(providers_name):
                 cliente = get_el(str(df.iat[row, first_col_id + (7 * indx)]))
                 conta = get_el(str(df.iat[row, (first_col_id+1) + (7 * indx)]))
@@ -170,39 +166,9 @@ class AccommodationRepository:
                 self._accommodations.append(acc_aux)
 
     def get(self, concessionaria, cliente: str, conta: str, contrato: str, local: str, instalacao: str) -> Accommodation2:
-        def filtro(el: Contract):
-            teve_teste = False
-            if el._cliente and cliente:
-                teve_teste = True
-                if el._cliente != cliente:
-                    return False
-            if el._conta and conta:
-                teve_teste = True
-                if el._conta != conta:
-                    return False
-            if el._contrato and contrato:
-                teve_teste = True
-                if el._contrato != contrato:
-                    return False
-
-            if el._instalacao and instalacao:
-                teve_teste = True
-                if el._instalacao != instalacao:
-                    return False
-            if el._local_consumo and local:
-                teve_teste = True
-                if el._local_consumo != local:
-                    return False
-
-            return teve_teste
-
         for acc in self._accommodations:
-            if acc._id == 'LA_Pia24A_2Es':
-                a = 0
-
-            contas = [x for x in acc._contracts if x._id_service_provide == concessionaria]
-            for el in contas:
-                if filtro(el):
+            for el in acc._contracts:
+                if el.is_you(concessionaria, cliente, conta, contrato, local, instalacao):
                     return acc
 
         return None

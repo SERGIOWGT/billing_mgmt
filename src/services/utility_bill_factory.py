@@ -9,7 +9,8 @@ class UtilityBillFactory:
     @staticmethod
     def execute(texto: str) -> Optional[UtilityBillBase]:
         if (texto.find('meo.pt') > 0):
-            return UtilityBillMEO()
+            if (texto.find('ATCUD') > 0):
+                return UtilityBillMEO()
 
         if (texto.find('My Vodafone') > 0):
             return UtilityBillVodafone()

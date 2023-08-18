@@ -17,13 +17,14 @@ class ApplicationLogHandler():
 
 
     def _send_message(self, tipo, msg):
-        str_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        apiURL = 'https://hook.us1.make.com/es853u8com87xk8fni56fdnm8tshg8vk'
+        ...
+        #str_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #apiURL = 'https://hook.us1.make.com/es853u8com87xk8fni56fdnm8tshg8vk'
 
-        try:
-            _ = requests.post(apiURL, json={'execucao': self._str_data_execucao, 'horario': str_now, 'tipo': tipo, 'mensagem': msg}, timeout=10000)
-        except Exception:
-            ...
+        #try:
+        #    _ = requests.post(apiURL, json={'execucao': self._str_data_execucao, 'horario': str_now, 'tipo': tipo, 'mensagem': msg}, timeout=10000)
+        #except Exception:
+        #    ...
     
     def _send_telegram(self, apiToken, list, msg):
         #chatID = '1562103759'

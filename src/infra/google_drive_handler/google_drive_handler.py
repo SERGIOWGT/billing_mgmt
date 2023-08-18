@@ -87,6 +87,10 @@ class GoogleDriveHandler (IGoogleDriveHandler):
         media_body = MediaFileUpload(new_filename, mimetype=file['mimeType'], resumable=False)
         return self.get_service().files().update(fileId=file_id, media_body=media_body, fields='id, webViewLink').execute()
 
+    def rename_file(self, file_Id, new_filename):
+        body = {'name': new_filename}
+        return self.get_service().files().update(fileId=file_Id, body=body).execute()
+
     def find_file(self, name: str, parent_id: str = '') -> Optional[Any]:
         q = f" name = '{name}' and trashed = false "
         if (parent_id):

@@ -26,3 +26,7 @@ class IGoogleDriveHandler(ABC):
     @abstractmethod
     def create_folder(self, name, parent_id: str = '') -> Any:
         ...
+
+    @abstractmethod
+    def rename_file(self, file_Id, new_filename):
+        ...

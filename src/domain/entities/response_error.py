@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import datetime
 from typing import Optional
 from src.domain.entities.base.base_utility_bill import UtilityBillBase
 
@@ -27,4 +28,5 @@ class UtilityBillDuplicatedResponse(UtilityBillErrorResponse):
 
 @dataclass
 class UtilityBillOkResponse(UtilityBillBaseResponse):
+    dt_filing: datetime = None
     utility_bill: Optional[UtilityBillBase] = None

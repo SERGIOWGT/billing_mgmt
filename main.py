@@ -4,6 +4,7 @@ from src.apps.app import App
 from src.infra.app_configuration_reader.app_configuration_reader import AppConfigurationReader
 from src.infra.application_log.app_log_handler import ApplicationLogHandler
 from src.infra.exception_handler import ApplicationException
+from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
 
 def create_logger(name: str):
     logging.basicConfig(
@@ -37,5 +38,7 @@ if __name__ == '__main__':
     local_email_work_folder = get_local_config_info(app_config_reader, 'email_in_local_folder')
     paid_bill_path = os.path.join(base_dir, 'database', 'database.xlsx')
 
-    app = App(log, accommodation_fileid=accommodation_fileid, config_path=config_path, local_work_path=local_work_path, paid_bill_path=paid_bill_path)
+    log.save_message('Connecting google drive....', execution=True)
+    drive = GoogleDriveHandler(config_path)
+    app = App(log, accommodation_fileid=accommodation_fileid, drive=drive, local_work_path=local_work_path, paid_bill_path=paid_bill_path)
     app.execute()

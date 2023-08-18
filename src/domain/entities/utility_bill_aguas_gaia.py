@@ -77,7 +77,6 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
                 pos_fim = x.regs[1][1]
                 self.str_valor = text[pos_ini:pos_fim]
 
-
     def _get_data_emissao(self, text) -> None:
         self.str_emissao = self._get_data(text, 'Data de Emissao\r\n', '\r\n')
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
