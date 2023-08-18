@@ -1,3 +1,6 @@
+#
+# CLASSE QUE LE OS EMAILS DO GMAIL DE UMA CONTA ESPECÍFICA. BAIXA OS EMAILS DE UMA PASTA, MOVE (OS LIDOS) PARA OUTRA E SALVA OS ARQUIVOS EM ANEXO NUM DIRETÓRIO PASSADO POR PARÂMETRO
+#
 import base64
 import datetime
 import email
@@ -10,7 +13,7 @@ from typing import List
 import random
 import pathlib
 import imaplib
-from src.infra.exception_handler import ApplicationException
+from src.infra.handlers.exception_handler import ApplicationException
 
 @dataclass
 class EmailReaderHandler():

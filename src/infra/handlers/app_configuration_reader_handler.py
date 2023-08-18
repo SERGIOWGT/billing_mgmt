@@ -1,7 +1,10 @@
+ # 
+ # CLASSE ESPECIFICA PARA LEITURA DO ARQUIVO DE CONFIGURAÇÃO E RETORNAR UMA CHAVE ESPECÍFICA
+ #
 import json
 import os
 from dataclasses import dataclass
-from src.infra.exception_handler import ApplicationException
+from src.infra.handlers.exception_handler import ApplicationException
 
 @dataclass
 class AppConfigurationReader ():

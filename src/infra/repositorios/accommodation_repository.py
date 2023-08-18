@@ -1,11 +1,14 @@
+#
+# CLASSE DESENVOLVIDA EM COMO REPOSITORIO (REPOSITORY PATTERN) DOS OBJETOS ALOJAMENTOS QUE ESTÃO EM EXCEL
+#
+
 from dataclasses import dataclass
 from typing import List, Any
 import io
 from datetime import datetime
 import pandas as pd
-from src.domain.enums.service_type_enum import ServiceTypeEnum
+from src.domain.enums import ServiceTypeEnum, ServiceProviderEnum
 from src.infra.repositorios.classes import Accommodation2, Contract, ServiceTypeStatus
-from src.domain.enums.service_provider_enum import ServiceProviderEnum
 
 
 @dataclass

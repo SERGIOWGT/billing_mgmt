@@ -2,14 +2,8 @@ from dataclasses import dataclass
 import os
 from src.apps.email_app import EmailApp
 from src.apps.process_pdf_app import ProcessPdfApp
-from src.infra.email_handler.email_sender_handler import EmailSenderHandler
-
-from src.infra.exception_handler import ApplicationException
-from src.infra.google_drive_handler.google_drive_handler import GoogleDriveHandler
-from src.infra.repositorios.accommodation_repository import AccommodationRepository
-from src.infra.repositorios.configuration_repository import ConfigurationRepository
-from src.infra.repositorios.exceptions_repository import ExceptionRepository
-from src.infra.repositorios.paid_bill_repository import PaidBillRepository
+from src.infra.handlers import EmailSenderHandler, ApplicationException, GoogleDriveHandler
+from src.infra.repositorios import AccommodationRepository, ConfigurationRepository, ExceptionRepository, PaidBillRepository
 
 
 @dataclass

@@ -5,18 +5,16 @@ from dataclasses import dataclass
 
 from typing import Any, List
 from src.domain.enums.document_type_enum import DocumentTypeEnum
-
-from src.domain.entities.response_error import UtilityBillIgnoredResponse, UtilityBillDuplicatedResponse, UtilityBillOkResponse, UtilityBillBaseResponse
-from src.domain.entities.base.base_utility_bill import UtilityBillBase
-from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
+from src.domain.entities.response_error import UtilityBillIgnoredResponse, UtilityBillOkResponse, UtilityBillBaseResponse
+from src.infra.handlers.google_drive_handler import GoogleDriveHandler
 
 
 @dataclass
 class ResultsUploader:
     _log: Any
-    _drive: IGoogleDriveHandler
+    _drive: GoogleDriveHandler
 
-    def __init__(self, log, drive: IGoogleDriveHandler):
+    def __init__(self, log, drive: GoogleDriveHandler):
         self._log = log
         self._drive = drive
 

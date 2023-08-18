@@ -1,13 +1,14 @@
+#
+# CLASSE PARA COMUNICAÇÃO COM O GOOGLE DRIVE.. BAIXA, LE, ESCREVE, UPLOAD, DOWNLOAD DE ARQUIVOS
+#
 import io
 from typing import Any, Optional
 from apiclient import discovery
 from httplib2 import Http
 from oauth2client import client, file, tools
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
-from .Igoogle_drive_handler import IGoogleDriveHandler
 
-
-class GoogleDriveHandler (IGoogleDriveHandler):
+class GoogleDriveHandler ():
     _SCOPE = 'https://www.googleapis.com/auth/drive'
     _drive = None
 

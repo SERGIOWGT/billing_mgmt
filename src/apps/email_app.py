@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 import os
-from src.infra.email_handler.email_reader_handler import EmailReaderHandler
-from src.infra.exception_handler import ApplicationException
+from src.infra.handlers import EmailReaderHandler, ApplicationException
 
 @dataclass
 class EmailApp:

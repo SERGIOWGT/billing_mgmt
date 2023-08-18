@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 import datetime
 from typing import List
-from src.domain.enums.service_provider_enum import ServiceProviderEnum
-from src.domain.enums.service_type_enum import ServiceTypeEnum
+from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
 
 @dataclass
 class ServiceTypeStatus:

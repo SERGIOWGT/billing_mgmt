@@ -6,15 +6,15 @@ from openpyxl import load_workbook
 import pandas as pd
 from src.domain.entities.response_error import UtilityBillIgnoredResponse, UtilityBillDuplicatedResponse, UtilityBillOkResponse, UtilityBillErrorResponse
 from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum, DocumentTypeEnum
-from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
+from src.infra.handlers.google_drive_handler import GoogleDriveHandler
 
 
 @dataclass
 class ResultsSaver:
     _log: Any
-    _drive: IGoogleDriveHandler
+    _drive: GoogleDriveHandler
 
-    def __init__(self, log, drive: IGoogleDriveHandler):
+    def __init__(self, log, drive: GoogleDriveHandler):
         self._log = log
         self._drive = drive
 

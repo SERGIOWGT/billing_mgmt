@@ -4,18 +4,10 @@ import datetime
 import os
 from typing import List
 from src.domain.entities.response_error import UtilityBillDuplicatedResponse, UtilityBillErrorResponse, UtilityBillIgnoredResponse, UtilityBillOkResponse
-from src.domain.enums.document_type_enum import DocumentTypeEnum
-from src.domain.enums.service_provider_enum import ServiceProviderEnum
-
-from src.infra.exception_handler import ApplicationException
-from src.infra.google_drive_handler.Igoogle_drive_handler import IGoogleDriveHandler
-from src.infra.pdf_extractor_handler.pdf_extractor_handler import PdfExtractorHandler
-from src.infra.repositorios.accommodation_repository import AccommodationRepository
-from src.infra.repositorios.exceptions_repository import ExceptionRepository
-from src.infra.repositorios.paid_bill_repository import PaidBillRepository
-from src.services.results_saver import ResultsSaver
-from src.services.results_uploader import ResultsUploader
-from src.services.utility_bill_factory import UtilityBillFactory
+from src.domain.enums import DocumentTypeEnum, ServiceProviderEnum
+from src.infra.handlers import ApplicationException, GoogleDriveHandler, PdfExtractorHandler
+from src.infra.repositorios import AccommodationRepository, ExceptionRepository, PaidBillRepository
+from src.services import ResultsSaver, ResultsUploader, UtilityBillFactory
 
 
 @dataclass
@@ -34,7 +26,7 @@ class ProcessPdfApp:
     _exports_file_id = ''
     _all_lists = []
 
-    def __init__(self, drive: IGoogleDriveHandler, log, accommodations_repo: AccommodationRepository, paid_repo: PaidBillRepository, exception_repo: ExceptionRepository):
+    def __init__(self, drive: GoogleDriveHandler, log, accommodations_repo: AccommodationRepository, paid_repo: PaidBillRepository, exception_repo: ExceptionRepository):
         ApplicationException.when(log is None, 'Log não iniciado.')
         ApplicationException.when(drive is None, 'Google Drive não iniciado.', log)
         self._drive = drive

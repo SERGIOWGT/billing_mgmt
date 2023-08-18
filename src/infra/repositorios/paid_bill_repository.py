@@ -1,3 +1,7 @@
+#
+# CLASSE DESENVOLVIDA EM COMO REPOSITORIO (REPOSITORY PATTERN) DOS OBJETOS DAS CONTAS PROCESSADAS NA PLANIHLA DE HISTORICO
+#
+
 from dataclasses import dataclass
 from datetime import datetime
 import os
@@ -6,10 +10,9 @@ import pandas as pd
 from pyparsing import Any
 from itertools import groupby
 from src.domain.entities.paid_utility_bill import PaidUtilityBill
-from src.domain.enums.service_provider_enum import ServiceProviderEnum
-from src.domain.enums.service_type_enum import ServiceTypeEnum
+from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
 
-from src.infra.exception_handler import ApplicationException
+from src.infra.handlers.exception_handler import ApplicationException
 
 @dataclass
 class PaidBillRepository:

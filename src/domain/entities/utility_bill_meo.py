@@ -1,7 +1,6 @@
 import re
 from unidecode import unidecode
-from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum
-from src.domain.enums.document_type_enum import DocumentTypeEnum
+from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum, DocumentTypeEnum
 from .base.base_utility_bill import UtilityBillBase
 
 

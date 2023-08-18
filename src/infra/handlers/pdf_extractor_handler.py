@@ -1,12 +1,26 @@
-from dataclasses import dataclass
+#
+# CLASSE QUE APENAS LÊ O PDF E O TRANSFORMA EM UM GRANDE TEXTO EM MEMORIA
+#
+
+#
+# ESTRUTURAS DE DADOS USADAS PELO PDF EXTRATOR HANDLES USADAS COMO CLASSES
+#
+from dataclasses import dataclass, field
+from pyparsing import List
 import pypdfium2 as pdfium
 
-from .Ipdf_extractor_handler import IPdfExtractorHandler
-from .page_content import PageContent
-from .pdf_content import PdfContent
+@dataclass
+class PageContent:
+    lines: List[str] = field(default_factory=list)
+
 
 @dataclass
-class PdfExtractorHandler (IPdfExtractorHandler):
+class PdfContent:
+    num_pages: int = 0
+    pages: List[PageContent] = field(default_factory=list)
+
+@dataclass
+class PdfExtractorHandler ():
 
     def get_content(self, file_name: str, break_lines: bool = True) -> PdfContent:
         doc = pdfium.FPDF_LoadDocument(file_name, None)

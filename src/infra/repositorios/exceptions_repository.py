@@ -1,8 +1,13 @@
+#
+# CLASSE DESENVOLVIDA EM COMO REPOSITORIO (REPOSITORY PATTERN) DOS OBJETOS DE EXCEÇOES DO ROBOT QUE ESTAO NA PLANIHLA DE ALOJAMENTOS
+#
+
+
 from dataclasses import dataclass
 from typing import Any
 import io
 import pandas as pd
-from src.infra.exception_handler import ApplicationException
+from src.infra.handlers.exception_handler import ApplicationException
 
 
 @dataclass

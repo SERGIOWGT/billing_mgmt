@@ -6,8 +6,7 @@ from src.domain.entities.response_error import UtilityBillIgnoredResponse, Utili
 from src.domain.entities.paid_utility_bill_list import PaidUtilityBillList
 from src.domain.enums.document_type_enum import DocumentTypeEnum
 from src.domain.entities.accommodation_list import AccommodationList
-from src.infra.pdf_extractor_handler.pdf_extractor_handler import \
-    PdfExtractorHandler
+from src.infra.pdf_extractor_handler import  PdfExtractorHandler
 from src.services.utility_bill_factory import UtilityBillFactory
 
 

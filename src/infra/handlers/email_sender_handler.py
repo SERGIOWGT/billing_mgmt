@@ -1,14 +1,14 @@
-
+#
+# CLASSE ESPECÍFICA PARA ENVIAR EMAIL DE UMA CONTA GMAIL ESPECÍFICA PARA QUALQUER CONTA DE EMAIL
+#
 from dataclasses import dataclass
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
-from src.infra.exception_handler import ApplicationException
+from src.infra.handlers.exception_handler import ApplicationException
 
 @dataclass
 class EmailSenderHandler():
-    
     _host: str = ''
     _user_name: str = ''
     _password: str = ''

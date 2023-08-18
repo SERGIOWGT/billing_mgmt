@@ -1,3 +1,7 @@
+#
+# CLASSE ESPECÍFICA PARA EXECUTAR OS LOGS DA APLICAÇÃO
+# 
+
 from dataclasses import dataclass
 from logging import Logger
 from typing import Any
