@@ -47,7 +47,7 @@ class PaidBillRepository:
             
         return ret
 
-    def get_possible_faults(self)->Any:
+    def get_possible_faults(self, days: int) -> Any:
         work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO')]
         work_list.sort(key=lambda x: (x.nome_Accommodation, x.nome_concessionaria))
 
@@ -55,7 +55,7 @@ class PaidBillRepository:
         for key, group in groupby(work_list, key=lambda x: (x.nome_Accommodation, x.nome_concessionaria)):
             nome_Accommodation, nome_concessionaria = key
             max_date = max(item.dt_emissao for item in group)
-            if abs((datetime.strptime(max_date, "%Y/%m/%d") - datetime.now()).days) > 30:
+            if abs((datetime.strptime(max_date, "%Y/%m/%d") - datetime.now()).days) > days:
                 ret.append(f'{nome_Accommodation}, {nome_concessionaria}, ultima conta emitida em {max_date}')
 
         return ret

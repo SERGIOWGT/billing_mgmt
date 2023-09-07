@@ -8,21 +8,16 @@ with open('requirements.txt') as f:
 def create_empty_directories():
     # Lista de diretórios vazios a serem criados
     directories = [
-        'logs',
         'config',
         'database',
-        'downloads',
-        'exports',
-        'sample-files'
+        'temp'
     ]
 
     # Criação dos diretórios vazios
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
 
-
 create_empty_directories()
-
 setup(
     name='Robot_QQDestino',
     version='1.0',
@@ -31,12 +26,10 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     data_files=[
-        ('', ['read.me']),
         ('', ['requirements.txt']),
         ('', ['main.py']),
         ('config', ['config/client_secret.json']),
-        ('sample-files', ['sample-files/config.json-sample']), 
-        ('sample-files', ['sample-files/Alojamentos-sample.xlsx']),
+        ('config', ['config/config.json']),
         ('src', ['src/app.py']),
         ('', ['main.py'])
     ],

@@ -315,7 +315,10 @@ class ProcessPdfApp:
 
         uploader = ResultsUploader(self._log, self._drive)
         self._log.save_message('Upload export file', execution=True)
-        self._exports_file_id = uploader.upload_excelfile(folder_results_id=exports_folder_id, file_path=exports_file_path)
+        _exports_file = uploader.upload_excelfile(folder_results_id=exports_folder_id, file_path=exports_file_path)
+        if (_exports_file):
+            self._exports_file_id = _exports_file['id']
+            
         if len(self._processed_list) > 0:
             self._log.save_message('Upload QD28 file', execution=True)
             self._qd280_file_id = uploader.upload_excelfile(folder_results_id=qd28_folder_id, file_path=qd28_file_path)
@@ -346,4 +349,4 @@ class ProcessPdfApp:
         self._log.save_message_qd30('tipo_alerta', len(self._processed_list), len(self._error_list), len(self._not_found_list), qd28_link, exports_link)
         self._log.save_message(f'Sem alojamentos {len(self._not_found_list)}, OK {len(self._processed_list)}, Ignorados {len(self._ignored_list)}, Erros {len(self._error_list)}, Duplicados {len(self._duplicate_list)}, Expirados {len(self._expired_list)}  ', execution=True)
 
-        return self._not_found_list
+        return self._not_found_list, exports_link

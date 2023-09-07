@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import datetime
 import os
 from src.apps.email_app import EmailApp
 from src.apps.process_pdf_app import ProcessPdfApp
@@ -73,7 +74,7 @@ class App:
                           input_email_folder=input_email_folder, output_email_folder=output_email_folder, temp_dir=self._local_work_path,
                             work_folder_id=work_folder_id)
 
-    def _send_warnings(self, not_found_list):
+    def _send_warnings(self, not_found_list, exports_link):
         def __send(list, _to, subject, body):
 
             if len(list) == 0:
@@ -88,6 +89,9 @@ class App:
                     for indx, msg in enumerate(lines):
                         body += f'{indx_warn+1}.{indx+1}) {msg} \n'
 
+                if exports_link:
+                    body += f'\n\nLink do arquivo de exportação: {exports_link}'
+                    
                 body += '\n\nFIM DO RELATÓRIO'
 
             for email_address in _to.split(','):
@@ -95,6 +99,8 @@ class App:
 
             return subject, body
 
+        email_list = self._get_remote_info('warning.email.list')
+        days_to_warning = self._get_remote_info('days.to.warning')
         email_sender = EmailSenderHandler(host=self._smtp_server, user_name=self._user, password=self._password)
         email_body = []
         if len(not_found_list)>0:
@@ -103,15 +109,19 @@ class App:
         paid_repo = PaidBillRepository()
         paid_repo.from_excel(self._paid_bill_path)
         erro1 = paid_repo.get_last_discontinuous_period()
-        erro2 = paid_repo.get_possible_faults()
+        erro2 = paid_repo.get_possible_faults(days=days_to_warning)
         if len(erro1) > 0:
             email_body.append(('ALOJAMENTOS COM DESCONTINUIDADE NO RECEBIMENTO DAS CONTAS', erro1))
 
         if len(erro2) > 0:
-            email_body.append(('ALOJAMENTOS COM CONTAS PENDENTES (EMISSÃO DA CONTA >= 30 QUE DIAS CORRIDOS)', erro2))
+            email_body.append((f'ALOJAMENTOS COM CONTAS PENDENTES (EMISSÃO DA CONTA >= {days_to_warning} QUE DIAS CORRIDOS)', erro2))
 
-        email_list = self._get_remote_info('warning.email.list')
-        __send(email_body, email_list, "[ROBOT] AVISOS DE EXECUCÃO", '')
+        data_atual = datetime.date.today()
+        hora_atual = datetime.datetime.now().time()
+        str_data_atual = data_atual.strftime("%d/%m/%Y")
+        str_hora_atual = hora_atual.strftime("%H:%M")
+
+        __send(email_body, email_list, f"[ROBOT] AVISOS DE EXECUCÃO | {str_data_atual} | {str_hora_atual} ", '')
 
     def _process_files(self):
         def _validate_folder(key):
@@ -147,13 +157,12 @@ class App:
         self._log.save_message(f'{total} payments(s)', execution=True)
 
         xxx_app = ProcessPdfApp(self._drive, self._log, accommodations_repo, paid_repo, except_repo)
-        not_found_list = xxx_app.execute(temp_dir=self._local_work_path, email_local_folder='', work_folder_id=work_folder_id, others_folder_base_id=others_folder_base_id,
+        not_found_list, exports_link = xxx_app.execute(temp_dir=self._local_work_path, email_local_folder='', work_folder_id=work_folder_id, others_folder_base_id=others_folder_base_id,
                             exports_folder_id=exports_folder_id, historic_folder_id=historic_folder_id, qd28_folder_id=qd28_folder_id, paid_bill_path=self._paid_bill_path)
 
-        return not_found_list
+        return not_found_list, exports_link
 
     def execute(self):
         self._get_emails()
-        not_found_list = self._process_files()
-        not_found_list = []
-        self._send_warnings(not_found_list)
+        not_found_list, exports_link = self._process_files()
+        self._send_warnings(not_found_list, exports_link)

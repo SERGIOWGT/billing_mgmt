@@ -30,13 +30,13 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
 
         self.id_cliente = vet[0]
 
-    def _get_id_contrato(self, text) -> None:
+    def _get_id_conta(self, text) -> None:
         cliente_conta = self._get_data(text, 'Cliente / Conta:', '\r\n')
         vet = cliente_conta.strip().split('/')
         if (len(vet) != 2):
             return False
 
-        self.id_contrato = cliente_conta
+        self.id_conta = vet[1].strip()
 
     def _get_periodo_faturacao(self, text):
         self.periodo_referencia = self._get_data(text, 'Periodo Faturacao:', '\r\n')
@@ -97,7 +97,7 @@ class UtilityBillAguasDeGaia(UtilityBillBase):
         self._get_local_consumo(text)
         self._get_instalacao(text)
         self._get_id_cliente(text)
-        self._get_id_contrato(text)
+        self._get_id_conta(text)
         self._get_id_documento(text)
         self._get_data_emissao(text)
         self._get_data_vencimento(text)

@@ -1,4 +1,4 @@
-title Funcionamento Robot Qualquer Destino
+title Funcionamento Robot Qualquer Destino - Nivel 1
 
 participant App
 participant Processor PDF App
@@ -26,7 +26,9 @@ App->Processor PDF App:Envia id dos diretórios do google drive e os repositóri
 		  else Não existe esse alojamento
                 Processor PDF App->>Processor PDF App:Salva conta na lista de Alojamentos Desconhecidos
           else Alojamento em Setup
-                Processor PDF App->>Processor PDF App:Salva conta na lista de Contas com Erros (MSG=ALOJAMENTO_INEXISTENTE)
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Contas em SETUP
+ else Alojamento com contrato encerrado
+                Processor PDF App->>Processor PDF App:Salva conta na lista de Contas expiradas (MSG='CONTRATO_ENCERRADO')
             else Conta já foi processada e arquivada
                 Processor PDF App->>Processor PDF App:Salva conta na lista de contas Duplicadas (MSG=CONTA_JA_RECEBIDA_E_ARQUIVADA)
  			else É uma NOTA DE CRÉDITO ou uma FATURA ZERADA sem data de emissão
@@ -49,6 +51,11 @@ App->Processor PDF App:Envia id dos diretórios do google drive e os repositóri
               Processor PDF App->>Google Drive Adapter:Salva no diretório de conciliação do primeiro mes aberto
         	end
       	end
+    end
+    group UPLOAD ARQUIVOS EM SETUP 
+    	loop PARA CADA ARQUIVO
+        	 Processor PDF App->>Google Drive Adapter:Salva no diretório de setup do alojamento
+      end
     end
     group UPLOAD ARQUIVOS COM ERROS 
     	loop PARA CADA ARQUIVO

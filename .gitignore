@@ -1,4 +1,5 @@
 .ambiente_virtual
+.venv
 pylintrc
 downloads
 downloads-2
