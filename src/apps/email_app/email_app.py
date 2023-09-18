@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 import os
+from src.apps.email_app.email_app_dto import EmailAppDto
 from src.infra.handlers import EmailReaderHandler, ApplicationException
 
 @dataclass
@@ -26,12 +27,12 @@ class EmailApp:
 
         return email
 
-    def execute(self, drive, log, imap_server, user, password, input_email_folder, output_email_folder, temp_dir: str, work_folder_id: str):
-        self._imap_server = imap_server
-        self._user = user
-        self._password = password
-        self._input_email_folder = input_email_folder
-        self._output_email_folder = output_email_folder
+    def execute(self, drive, log, data: EmailAppDto):
+        self._imap_server = data.imap_server
+        self._user = data.user
+        self._password = data.password
+        self._input_email_folder = data.input_email_folder
+        self._output_email_folder = data.output_email_folder
 
         email = self._get_email_handler(log)
         messages_id = email.get_messages_id(self._input_email_folder)
@@ -46,18 +47,18 @@ class EmailApp:
             if has_attachments is False:
                 email.move(message_uid, 'SEM_ATT')
                 continue
-     
-            file_list = email.get_save_attachments(message_uid, temp_dir, parsedate_to_datetime(rec_date))
+
+            file_list = email.get_save_attachments(message_uid, data.temp_dir, parsedate_to_datetime(rec_date))
             num_emails += 1
             for file_name in file_list:
                 num_files += 1
                 log.save_message(f'Downloaded "{file_name}" from "{sender}" titled "{subject}" on {rec_date}.')
-                complete_filename = os.path.join(temp_dir, file_name)
+                complete_filename = os.path.join(data.temp_dir, file_name)
                 log.save_message(f'Uploading email file {file_name}')
-                drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[work_folder_id])
+                drive.upload_file(local_file_name=complete_filename, file_name=file_name, parents=[data.work_folder_id])
                 log.save_message(f'Removing file {file_name}')
                 os.remove(complete_filename)
-        
+
             email.move(message_uid, self._output_email_folder)
 
         email.logout()

@@ -89,7 +89,7 @@ class UtilityBillBase:
         str_date = str_date.strip()
         str_date = str_date.replace(' de ', ' ')
         str_date = str_date.replace('  ', ' ')
-        str_date = str_date.replace(' de ', ' ')
+        str_date = str_date.replace(' DE ', ' ')
         str_date = re.sub(r"[\s.-]", "/", str_date)
 
         vet = str_date.split('/')

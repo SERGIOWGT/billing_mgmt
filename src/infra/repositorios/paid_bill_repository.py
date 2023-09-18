@@ -4,6 +4,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+import io
 import os
 from typing import List
 import pandas as pd
@@ -24,9 +25,9 @@ class PaidBillRepository:
     def number_of_payments(self) -> int:
         return len(self._paid_bills)
 
-    def get_last_discontinuous_period(self) -> Any:
+    def get_last_discontinuous_period(self, active_accommodations: [str]) -> Any:
         ret = []
-        work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO')]
+        work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO') and x.nome_Accommodation in active_accommodations]
         work_list.sort(key=lambda x: (x.nome_Accommodation, x.nome_concessionaria, x.dt_emissao))
 
         old_key = ''
@@ -47,8 +48,8 @@ class PaidBillRepository:
             
         return ret
 
-    def get_possible_faults(self, days: int) -> Any:
-        work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO')]
+    def get_possible_faults(self, days: int, active_accommodations: [str]) -> Any:
+        work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO') and x.nome_Accommodation in active_accommodations]
         work_list.sort(key=lambda x: (x.nome_Accommodation, x.nome_concessionaria))
 
         ret = []
@@ -60,11 +61,9 @@ class PaidBillRepository:
 
         return ret
 
-    def from_excel(self, file_path: Any) -> None:
-        if not os.path.exists(file_path):
-            return
-
-        df_ = pd.read_excel(file_path, dtype={'N. Documento / N. Fatura': object})
+    def from_excel(self, stream_file: Any) -> None:
+        # df_ = pd.read_excel(file_path, dtype={'N. Documento / N. Fatura': object})
+        df_ = pd.read_excel(io.BytesIO(stream_file), dtype={'N. Documento / N. Fatura': object})
         df = df_.where(pd.notnull(df_), None)
         cols = df.shape[1]
         ApplicationException.when(cols != 22, 'History Sheet must have 22 columns. ')

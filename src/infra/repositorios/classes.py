@@ -52,23 +52,27 @@ class Contract:
             return False
 
         teve_teste = False
-        if cliente:
+        if len(self._vet_cliente) > 0 and cliente:
             teve_teste = True
             if cliente not in self._vet_cliente:
                 return False
-        if conta:
+            
+        if len(self._vet_conta) > 0 and conta:
             teve_teste = True
             if conta not in self._vet_conta:
                 return False
-        if contrato:
+
+        if len(self._vet_contrato) > 0 and contrato:
             teve_teste = True
             if contrato not in self._vet_contrato:
                 return False
-        if instalacao:
+
+        if len(self._vet_instalacao) > 0 and instalacao:
             teve_teste = True
             if instalacao not in self._vet_instalacao:
                 return False
-        if local:
+
+        if len(self._vet_local_consumo) > 0 and local:
             teve_teste = True
             if local not in self._vet_local_consumo:
                 return False

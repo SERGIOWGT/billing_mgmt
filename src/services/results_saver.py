@@ -1,3 +1,4 @@
+import io
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -259,7 +260,7 @@ class ResultsSaver:
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute(self, exports_file_path: str, qd28_file_path: str, database_file_path: str, all_lists: dict):
+    def execute(self, exports_file_path: str, qd28_file_path: str, database_file_path: str, all_lists: dict, payments_file_id: str):
         ok_list = all_lists['processed_list']
         not_found_list = all_lists['not_found_list']
         error_list = all_lists['error_list']
@@ -301,16 +302,12 @@ class ResultsSaver:
             with pd.ExcelWriter(qd28_file_path) as writer:
                 df_qd28.to_excel(writer, sheet_name='Página1', index=False)
 
-            if os.path.exists(database_file_path) is False:
-                with pd.ExcelWriter(database_file_path) as writer:
-                    df_ok.to_excel(writer, sheet_name='Database', index=False)
-            else:
-                book = load_workbook(database_file_path)
-                with pd.ExcelWriter(database_file_path) as writer:
-                    writer.book = book
-                    ws = writer.sheets['Database']
+            if os.path.exists(database_file_path):
+                os.remove(database_file_path)
+                
+            stream_file = self._drive.get_excel_file(payments_file_id)
+            df_ = pd.read_excel(io.BytesIO(stream_file))
 
-                    # adiciona o dataframe na planilha excel
-                    for row in df_ok.iterrows():
-                        ws.append(row[1].tolist())
-                    writer.save()
+            with pd.ExcelWriter(database_file_path) as writer:
+                new_df = df_.append(df_ok)
+                new_df.to_excel(writer, sheet_name='Database', index=False)

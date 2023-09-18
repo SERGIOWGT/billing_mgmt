@@ -115,10 +115,10 @@ class ProcessPdfApp:
                 count = count + 1
                 file_id = file['id']
                 file_name = file['name']
-                #str_aux = '_'
-                #if (file_name[0:len(str_aux)].upper() != str_aux):
-                #   continue
-                # if (count > 15):  break
+                str_aux = '_'
+                if (file_name[0:len(str_aux)].upper() != str_aux):
+                   continue
+                #if (count > 15):  break
 
                 self._log.save_message(f'Getting file: {file_name} ({file_id}) ({count}/{total})')
                 file_content = self._drive.get_file(file_id)
@@ -290,7 +290,7 @@ class ProcessPdfApp:
             self._log.save_message('Uploading list of processed', execution=True )
             uploader.upload_ok_list(self._processed_list)
             self._log.save_message(f'{len(self._processed_list)} file(s) processed', execution=True)
-            
+
         if len(self._setup_list) > 0:
             self._log.save_message('Uploading list in setup', execution=True)
             uploader.upload_setup_list(self._setup_list)
@@ -303,29 +303,30 @@ class ProcessPdfApp:
         self._log.save_message(f'{len(self._duplicate_list)} duplicate file(s)', execution=True)
         self._log.save_message(f'{len(self._ignored_list)} ignored file(s)', execution=True)
 
-    def _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, paid_bill_path):
+    def _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, payments_file_id):
         now = datetime.datetime.now()
         str_datetime = now.strftime("%Y-%m-%d_%H_%M_%S")
         exports_file_path = os.path.join(temp_dir,  f'OUTPUT_SAVED_AT_{str_datetime}.xlsx')
         qd28_file_path = os.path.join(temp_dir,  f'#QD28_IMPORTACAO_ROBOT_SAVED_AT_{str_datetime}.xlsx')
+        paid_bill_file_path = os.path.join(temp_dir,  'DATABASE.xlsx')
 
         self._log.save_message('Saving the worksheets', execution=True)
         saver = ResultsSaver(self._log, self._drive)
-        saver.execute(exports_file_path, qd28_file_path, paid_bill_path, self._all_lists)
+        saver.execute(exports_file_path, qd28_file_path, paid_bill_file_path, self._all_lists, payments_file_id)
 
         uploader = ResultsUploader(self._log, self._drive)
         self._log.save_message('Upload export file', execution=True)
         _exports_file = uploader.upload_excelfile(folder_results_id=exports_folder_id, file_path=exports_file_path)
         if (_exports_file):
             self._exports_file_id = _exports_file['id']
-            
+
         if len(self._processed_list) > 0:
             self._log.save_message('Upload QD28 file', execution=True)
             self._qd280_file_id = uploader.upload_excelfile(folder_results_id=qd28_folder_id, file_path=qd28_file_path)
             self._log.save_message('Upload historical payments file', execution=True)
-            uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=paid_bill_path, save_previous=True)
+            uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=paid_bill_file_path, save_previous=True)
 
-    def execute(self, temp_dir: str, email_local_folder: str,  work_folder_id: str, others_folder_base_id: str, exports_folder_id: str, historic_folder_id: str, qd28_folder_id: str, paid_bill_path: str):
+    def execute(self, temp_dir: str, email_local_folder: str,  work_folder_id: str, others_folder_base_id: str, exports_folder_id: str, historic_folder_id: str, qd28_folder_id: str, payments_file_id: str):
         # Aqui le os arquivos e os separa em com erro, ignorados e em analise
         self._read_files(work_folder_id, email_local_folder)
 
@@ -336,7 +337,7 @@ class ProcessPdfApp:
         self._upload_files(others_folder_base_id)
 
         # Rotina para subir os arquivos de resultados (igual ao antigo)
-        self._export_results(temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, paid_bill_path)
+        self._export_results(temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, payments_file_id)
 
         # Rotina para para excluir os emails
         self._clean_email_folder()

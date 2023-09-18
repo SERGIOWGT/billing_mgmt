@@ -66,6 +66,10 @@ class AccommodationRepository:
                 ret = str(link).replace('https://drive.google.com/drive/folders/', '')
                 ret = str(ret).replace('https://drive.google.com/drive/u/0/folders/', '')
                 ret = ret.replace('?usp=drive_link', '')
+                
+                if ret:
+                    ret = ret.strip()
+                    
             return ret
 
         df_ = pd.read_excel(io.BytesIO(stream_file), sheet_name="#ESTADO_FECHO")
@@ -170,8 +174,14 @@ class AccommodationRepository:
 
     def get(self, concessionaria, cliente: str, conta: str, contrato: str, local: str, instalacao: str) -> Accommodation2:
         for acc in self._accommodations:
+            if acc._id == 'JH_Conceicao67_22':
+                a = 0
+
             for el in acc._contracts:
                 if el.is_you(concessionaria, cliente, conta, contrato, local, instalacao):
                     return acc
 
         return None
+
+    def get_activies_id(self, date: datetime) -> List[str]:
+        return [acc._id for acc in self._accommodations if acc.is_terminated(date) == False]

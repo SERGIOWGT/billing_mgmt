@@ -29,7 +29,7 @@ class ApplicationLogHandler():
         #    _ = requests.post(apiURL, json={'execucao': self._str_data_execucao, 'horario': str_now, 'tipo': tipo, 'mensagem': msg}, timeout=10000)
         #except Exception:
         #    ...
-    
+
     def _send_telegram(self, apiToken, list, msg):
         #chatID = '1562103759'
         #chatID = '914915746'
@@ -72,7 +72,7 @@ class ApplicationLogHandler():
             _ = requests.post(apiURL, json=jsonData, timeout=10000)
         except Exception:
             ...
-            
+
     def save_message_email(self, list):
         apiURL = 'https://hook.us1.make.com/vkk4ty80fpr92s11kw5xw14kh1gp51td'
 
@@ -81,3 +81,6 @@ class ApplicationLogHandler():
             _ = requests.post(apiURL, json=list, timeout=10000)
         except Exception:
             ...
+
+    def error(self, msg, instant_msg: bool = True):
+        ...
