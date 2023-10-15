@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from src.domain.entities import UtilityBillBase, UtilityBillGalp, UtilityBillAltice, UtilityBillAguasDeGaia, UtilityBillAguasDePorto, UtilityBillEDP, UtilityBillEpal, UtilityBillNOS, UtilityBillVodafone, UtilityBillMEO
+from src.domain.entities import UtilityBillBase, UtilityBillGalp, UtilityBillAltice, UtilityBillAguasDeGaia, UtilityBillAguasDePorto, UtilityBillEDP, UtilityBillEpal, UtilityBillNOS, UtilityBillVodafone, UtilityBillMEO, UtilityBillAguasDeCascais
 
 
 @dataclass
@@ -35,5 +35,8 @@ class UtilityBillFactory:
 
         if (texto.find('galp.pt') > 0) and (texto.find('ATCUD') > 0):
             return UtilityBillGalp()
+
+        if (texto.find('NIF 505 124 289') > 0) and (texto.find('ATCUD') > 0):
+            return UtilityBillAguasDeCascais()
 
         return None

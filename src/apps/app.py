@@ -69,7 +69,7 @@ class App:
         work_folder_id = self._validate_folder('googledrive.work.folderid')
         qd28_folder_id = self._validate_folder('googledrive.qd28.folderid')
 
-        #self._check_drive_folders_access()
+        self._check_drive_folders_access()
 
         self._log.save_message('Getting exceptions repository....', execution=True)
         stream_file = self._drive.get_google_sheets_file(self._accommodation_fileid)

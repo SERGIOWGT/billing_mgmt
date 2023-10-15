@@ -1,6 +1,8 @@
+import re
 from unidecode import unidecode
 from src.domain.enums import ServiceProviderEnum, ServiceTypeEnum, DocumentTypeEnum
 from .base.base_utility_bill import UtilityBillBase
+
 
 class UtilityBillEDP(UtilityBillBase):
     def __init__(self):
@@ -40,15 +42,14 @@ class UtilityBillEDP(UtilityBillBase):
 
     def _get_id_contrato(self, text: str):
         start_pos = 0
-        start_pos = text.find('MEUS DADOS')
+        start_pos = text.find('meus dados')
         if start_pos <= 0:
-                return ''
-            
+            return ''
 
-        str_aux = 'DIGO DE CONTRATO'
+        str_aux = 'digo de contrato'
         start_pos = text.find(str_aux, start_pos+len(str_aux)+1)
         if start_pos <= 0:
-            str_aux = 'DIGO DO CONTRATO'
+            str_aux = 'digo do contrato'
             start_pos = text.find(str_aux, start_pos+len(str_aux)+1)
             if start_pos <= 0:
                 return ''
@@ -67,7 +68,15 @@ class UtilityBillEDP(UtilityBillBase):
         self.id_contrato = id_contrato
 
     def _get_periodo_faturacao(self, text):
-        self.periodo_referencia = self._conv_periodo_faturacao(self._get_data(text, 'PERIODO DE FATURACAO:', '\r\n'))
+
+        # Remove espaços extras do texto
+        #text = re.sub(r"\s+", " ", text)
+
+        # Extrai as informações desejadas do texto
+        cliente = re.search(r"Periodo de faturacao: (.*)\r\n", text).group(1)
+        
+        self.periodo_referencia = self._conv_periodo_faturacao(self._get_data(text, 'Periodo de faturacao:', '\r\n'))
+        A = 0
 
     def _get_id_documento(self, text: str) -> None:
         self.id_documento = self._get_data(text, 'EDPC801-', '\r\n')
@@ -75,25 +84,24 @@ class UtilityBillEDP(UtilityBillBase):
             self.id_documento = self._get_data(text, 'EDPC805-', '\r\n')
 
     def _get_data_vencimento(self, text) -> None:
-        self.str_vencimento = self._get_data(text, 'CONTA A PARTIR DE:\r\n', '\r\n')
+        self.str_vencimento = self._get_data(text, 'conta a partir de:\r\n', '\r\n')
         if (self.str_vencimento == ''):
-            self.str_vencimento = self._get_data(text, 'POSSO\r\nPAGAR?\r\n', '\r\n')
+            self.str_vencimento = self._get_data(text, 'posso\r\npagar?\r\n', '\r\n')
         self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY', full_month=True)
 
     def _get_valor(self, text) -> None:
-        self.str_valor = self._get_data(text, 'A PAGAR?\r\n', '\r\n')
+        self.str_valor = self._get_data(text, 'a pagar?\r\n', '\r\n')
         if self.str_valor == '':
-            self.str_valor = self._get_data(text, 'A RECEBER?\r\n', '\r\n')
+            self.str_valor = self._get_data(text, 'a receber?\r\n', '\r\n')
             if self.str_valor:
-                self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO          
+                self.tipo_documento = DocumentTypeEnum.NOTA_CREDITO
 
     def _get_data_emissao(self, text) -> None:
-        self.str_emissao = self._get_data(text, 'DOCUMENTO EMITIDO A:', '\r\n')
+        self.str_emissao = self._get_data(text, 'Documento emitido a:', '\r\n')
         self.str_emissao = self._convert_2_default_date(self.str_emissao, 'DMY', full_month=True)
 
     def create(self, text: str) -> None:
         text = unidecode(text)
-        text = text.upper()
 
         self._get_periodo_faturacao(text)
         self._get_local_consumo(text)

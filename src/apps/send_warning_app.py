@@ -62,4 +62,4 @@ class SendWarningApp:
         str_data_atual = data_atual.strftime("%d/%m/%Y")
         str_hora_atual = hora_atual.strftime("%H:%M")
 
-        self._make_email(email_body, 'sergiowgt@gmail.com', f"[ROBOT] AVISOS DE EXECUCÃO | {str_data_atual} | {str_hora_atual} ", '', exports_file_link)
+        self._make_email(email_body, email_list, f"[ROBOT] AVISOS DE EXECUCÃO | {str_data_atual} | {str_hora_atual} ", '', exports_file_link)

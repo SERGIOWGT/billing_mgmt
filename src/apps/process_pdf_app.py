@@ -115,10 +115,10 @@ class ProcessPdfApp:
                 count = count + 1
                 file_id = file['id']
                 file_name = file['name']
-                str_aux = '_'
-                if (file_name[0:len(str_aux)].upper() != str_aux):
-                   continue
-                #if (count > 15):  break
+                #str_aux = '_'
+                #if (file_name[0:len(str_aux)].upper() != str_aux):
+                #   continue
+                #if (count > 50):  break
 
                 self._log.save_message(f'Getting file: {file_name} ({file_id}) ({count}/{total})')
                 file_content = self._drive.get_file(file_id)
@@ -217,6 +217,11 @@ class ProcessPdfApp:
 
             _work_date = actual_bill.dt_vencimento if actual_bill.dt_vencimento else actual_bill.dt_emissao
             if accomm_aux.in_setup(_work_date):
+                if actual_bill.folder_setup_id == '':
+                    self._error_list.append(UtilityBillErrorResponse(error_type='EM_SETUP_SEM_DIRETORIO', email_file_id=file.email_file_id, google_file_id='',
+                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                    continue
+                
                 self._setup_list.append(UtilityBillErrorResponse(error_type='EM_SETUP', email_file_id=file.email_file_id, google_file_id='',
                                                                     file_name=file.file_name, utility_bill=actual_bill))
                 continue

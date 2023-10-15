@@ -9,3 +9,4 @@ from .utility_bill_meo import UtilityBillMEO
 from .utility_bill_aguas_porto import UtilityBillAguasDePorto
 from .utility_bill_epal import UtilityBillEpal
 from .utility_bill_galp import UtilityBillGalp
+from .utility_bill_aguas_cascais import UtilityBillAguasDeCascais

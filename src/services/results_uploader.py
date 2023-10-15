@@ -133,6 +133,7 @@ class ResultsUploader:
                 data_base = resp.utility_bill.dt_emissao
 
             dir_name = data_base.strftime('%Y_%m')
+            self._log.save_message(f'Creating folder {dir_name}')
             date_folder_id = self._create_folder(dir_name, resp.utility_bill.folder_id)
 
             google_file_name = resp.nome_calculado

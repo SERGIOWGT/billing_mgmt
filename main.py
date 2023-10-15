@@ -2,6 +2,7 @@
 import datetime
 import logging
 import os
+import re
 from src.apps.app import App
 from src.apps.email_app.email_app import EmailApp
 from src.apps.email_app.email_app_dto import EmailAppDto
@@ -87,7 +88,7 @@ if __name__ == '__main__':
 
         log.save_message('Getting remote config information...', execution=True)
         config_repository = get_remote_config_info(accommodation_fileid, drive)
-        
+
         (_, host, user, password) = get_email_credentials(config_repository)
         (input_email_folder, output_email_folder, work_folder_id) = get_email_others_infos(config_repository)
         work_folder_id = drive.extract_id_from_link(work_folder_id)

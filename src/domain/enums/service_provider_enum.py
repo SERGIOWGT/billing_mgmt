@@ -12,3 +12,4 @@ class ServiceProviderEnum(IntEnum):
     NOS = 7
     VODAFONE = 8
     GOLDEN_ENERGY = 9
+    AGUAS_DE_CASCAIS = 10
