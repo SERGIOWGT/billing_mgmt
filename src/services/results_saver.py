@@ -19,6 +19,17 @@ class ResultsSaver:
         self._log = log
         self._drive = drive
 
+    def _create_df_recorring_errors(self, list: List[UtilityBillErrorResponse]) -> Any:
+        columns = ['Arquivo Original', 'Data Processamento']
+        df = pd.DataFrame(columns=columns)
+        now = datetime.now()
+        for line in list:
+            _dict = {}
+            _dict['Arquivo Original'] = line.file_name
+            _dict['Data Processamento'] = now.strftime("%d/%m/%Y %H:%M:%S")
+            df = pd.concat([df, pd.DataFrame.from_records([_dict])])
+        return df
+
     def _create_df_qd28(self, list: List[UtilityBillOkResponse]) -> Any:
         def service_type_2_categoria(id_service_type):
             if id_service_type == ServiceTypeEnum.AGUA:
@@ -52,7 +63,6 @@ class ResultsSaver:
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
-
 
     def _create_df_ok(self, list: List[UtilityBillOkResponse]) -> Any:
         columns = ['QQ Destino', 'Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
@@ -90,7 +100,7 @@ class ResultsSaver:
     def _create_df_not_found(self, list: List[UtilityBillErrorResponse]) -> Any:
         columns = ['QQ Destino', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Arquivo Google', 'Arquivo Original']
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Robot_Add', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -111,6 +121,7 @@ class ResultsSaver:
             _dict['Emissao'] = line.utility_bill.str_emissao
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
+            _dict['Robot_Add'] = line.first_time.strftime("%d/%m/%Y %H:%M:%S") if line.first_time else ''
             _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
@@ -118,13 +129,14 @@ class ResultsSaver:
         return df
 
     def _create_df_error(self, list: List[UtilityBillErrorResponse]) -> Any:
-        columns = ['Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
+        columns = ['Alojamento', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo Erro', 'Arquivo Google', 'Arquivo Original']
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo Erro', 'Robot_Add', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
             _dict = {}
+            _dict['Alojamento'] = line.utility_bill.id_alojamento
             _dict['Concessionaria'] = ServiceProviderEnum(line.utility_bill.concessionaria).name
             _dict['Tipo Servico'] = ServiceTypeEnum(line.utility_bill.tipo_servico).name
             _dict['Tipo Documento'] = DocumentTypeEnum(line.utility_bill.tipo_documento).name
@@ -141,6 +153,7 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo Erro'] = line.error_type
+            _dict['Robot_Add'] = line.first_time.strftime("%d/%m/%Y %H:%M:%S") if line.first_time else ''
             _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
@@ -150,7 +163,7 @@ class ResultsSaver:
     def _create_df_setup(self, list: List[UtilityBillErrorResponse]) -> Any:
         columns = ['QQ Destino', 'Alojamento', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo Erro', 'Arquivo Google', 'Arquivo Original']
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo Erro', 'Robot_Add', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -173,17 +186,17 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo Erro'] = line.error_type
+            _dict['Robot_Add'] = line.first_time.strftime("%d/%m/%Y %H:%M:%S") if line.first_time else ''
             _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-
     def _create_df_duplicated(self, list: List[UtilityBillDuplicatedResponse]) -> Any:
         columns = ['Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                    'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo', 'Arquivo Google', 'Arquivo Pago', 'Arquivo Original']
+                   'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo', 'Robot_Add', 'Arquivo Google', 'Arquivo Pago', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -207,6 +220,7 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo'] = line.error_type
+            _dict['Robot_Add'] = line.first_time.strftime("%d/%m/%Y %H:%M:%S") if line.first_time else ''
             _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Pago'] = line.original_google_link
             _dict['Arquivo Original'] = line.file_name
@@ -214,11 +228,10 @@ class ResultsSaver:
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-
     def _create_df_expired(self, list: List[UtilityBillDuplicatedResponse]) -> Any:
         columns = ['Alojamento', 'Ano Emissao', 'Mes Emissao', 'Concessionaria', 'Tipo Servico', 'Tipo Documento', 'N. Contrato', 'N. Cliente', 'N. Contribuinte',
                  'Local Consumo', 'Instalacao', 'N. Documento / N. Fatura', 'Periodo Referencia', 'Inicio Referencia',
-                 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo', 'Arquivo Google', 'Arquivo Original']
+                 'Fim Referencia',  'Emissao', 'Vencimento', 'Valor', 'Tipo', 'Robot_Add', 'Arquivo Google', 'Arquivo Original']
 
         df = pd.DataFrame(columns=columns)
         for line in list:
@@ -242,12 +255,12 @@ class ResultsSaver:
             _dict['Vencimento'] = line.utility_bill.str_vencimento
             _dict['Valor'] = line.utility_bill.valor
             _dict['Tipo'] = line.error_type
+            _dict['Robot_Add'] = line.first_time.strftime("%d/%m/%Y %H:%M:%S") if line.first_time else ''
             _dict['Arquivo Google'] = self._drive.make_google_link(line.google_file_id)
             _dict['Arquivo Original'] = line.file_name
 
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
-
 
     def _create_df_ignored(self, list: List[UtilityBillIgnoredResponse]) -> Any:
         columns = ['Tipo Erro', 'Arquivo Google', 'Arquivo Original']
@@ -260,7 +273,7 @@ class ResultsSaver:
             df = pd.concat([df, pd.DataFrame.from_records([_dict])])
         return df
 
-    def execute(self, exports_file_path: str, qd28_file_path: str, database_file_path: str, all_lists: dict, payments_file_id: str):
+    def execute(self, exports_file_path: str, qd28_file_path: str, database_file_path: str, recorring_errors_file_path: str, all_lists: dict, payments_file_id: str, recorring_errors_file_id: str):
         ok_list = all_lists['processed_list']
         not_found_list = all_lists['not_found_list']
         error_list = all_lists['error_list']
@@ -273,6 +286,7 @@ class ResultsSaver:
         not_found_list.sort(key=lambda x: x.utility_bill.concessionaria)
         duplicate_list.sort(key=lambda x: x.utility_bill.concessionaria)
         error_list.sort(key=lambda x: x.utility_bill.concessionaria)
+        
 
         df_ok = self._create_df_ok(ok_list)
         df_nf = self._create_df_not_found(not_found_list)
@@ -297,7 +311,6 @@ class ResultsSaver:
 
         #if os.path.exists(qd28_file_path):
         #    os.remove(qd28_file_path)
-
         if (len(ok_list) > 0):
             with pd.ExcelWriter(qd28_file_path) as writer:
                 df_qd28.to_excel(writer, sheet_name='Página1', index=False)
@@ -311,3 +324,21 @@ class ResultsSaver:
             with pd.ExcelWriter(database_file_path) as writer:
                 new_df = df_.append(df_ok)
                 new_df.to_excel(writer, sheet_name='Database', index=False)
+
+        all_errors = []
+        all_errors.extend(not_found_list)
+        all_errors.extend(error_list)
+        all_errors.extend(expired_list)
+        all_errors.extend(duplicate_list)
+        all_errors.extend(setup_list)
+        if (len(all_errors) > 0):
+            if os.path.exists(recorring_errors_file_path):
+                os.remove(recorring_errors_file_path)
+
+            stream_file = self._drive.get_excel_file(recorring_errors_file_id)
+            recorring_errors_df = pd.read_excel(io.BytesIO(stream_file))
+            new_erros_df = self._create_df_recorring_errors(all_errors)
+            recorring_errors_df = recorring_errors_df.append(new_erros_df)
+
+            with pd.ExcelWriter(recorring_errors_file_path) as writer:
+                recorring_errors_df.to_excel(writer, sheet_name='Errors', index=False)

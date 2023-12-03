@@ -174,7 +174,7 @@ class AccommodationRepository:
 
     def get(self, concessionaria, cliente: str, conta: str, contrato: str, local: str, instalacao: str) -> Accommodation2:
         for acc in self._accommodations:
-            if acc._id == 'JH_Conceicao67_22':
+            if acc.id == 'JH_Conceicao67_22':
                 a = 0
 
             for el in acc._contracts:
@@ -184,4 +184,7 @@ class AccommodationRepository:
         return None
 
     def get_activies_id(self, date: datetime) -> List[str]:
-        return [acc._id for acc in self._accommodations if acc.is_terminated(date) == False]
+        return [acc.id for acc in self._accommodations if acc.is_terminated(date) is False]
+
+    def get_activies_accommodations(self, date: datetime) :
+        return [acc for acc in self._accommodations if acc.is_terminated(date) is False]

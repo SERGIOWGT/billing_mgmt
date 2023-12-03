@@ -27,7 +27,7 @@ class PaidBillRepository:
 
     def get_last_discontinuous_period(self, active_accommodations: [str]) -> Any:
         ret = []
-        work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO') and x.nome_Accommodation in active_accommodations]
+        work_list = [x for x in self._paid_bills if x.nome_tipo_documento in ('CONTA_CONSUMO', 'FATURA_ZERADA', 'NOTA_CREDITO') and x.nome_Accommodation in active_accommodations and x.dt_emissao >= '2023/09/01']
         work_list.sort(key=lambda x: (x.nome_Accommodation, x.nome_concessionaria, x.dt_emissao))
 
         old_key = ''
@@ -82,9 +82,19 @@ class PaidBillRepository:
             accommodation_name = row['Alojamento']
             id_documento = row['N. Documento / N. Fatura']
             dt_emissao = row['Emissao']
+            if isinstance(dt_emissao, str):
+                dt_emissao = datetime.strptime(dt_emissao, "%Y/%m/%d")
+                dt_emissao = dt_emissao.strftime("%Y/%m/%d")
+            
             original_file_id = row['Arquivo Google']
             dt_begin_ref = row['Inicio Referencia']
+            if isinstance(dt_begin_ref, datetime):
+                dt_begin_ref = dt_begin_ref.strftime("%Y/%m/%d")
+
             dt_end_ref = row['Fim Referencia']
+            if isinstance(dt_end_ref, datetime):
+                dt_end_ref = dt_end_ref.strftime("%Y/%m/%d")
+
             nome_tipo_documento = row['Tipo Documento']
 
             self._paid_bills.append(PaidUtilityBill(provider_service_name, service_type_name, accommodation_name,

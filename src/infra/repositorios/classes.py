@@ -80,26 +80,29 @@ class Contract:
         return teve_teste
     
 class Accommodation2:
-    _id = ''
+    id = ''
+    folder_id = ''
+    folder_accounting_id = ''
+    folder_setup_id = ''
+    folder_permission_error = False
+    folder_accounting_permission_error = False
+    folder_setup_permission_error = False
     _start_date: datetime = None
     _end_date: datetime = None
     _nif_title = ''
-    _folder_id = ''
-    _folder_accounting_id = ''
-    _folder_setup_id = ''
     _services_type: List[ServiceTypeStatus] = None
     _contracts: List[Contract] = None
     _status_fecho = {}
     _line: int = 0
 
     def __init__(self, id: str, start_date: datetime, end_date: datetime, nif_title: str, folder_id: str, folder_accounting_id: str, folder_setup_id: str, line: int, status_fecho: dict) -> None:
-        self._id = id
+        self.id = id
         self._start_date = start_date
         self._end_date = end_date
         self._nif_title = nif_title
-        self._folder_id = folder_id
-        self._folder_accounting_id = folder_accounting_id
-        self._folder_setup_id = folder_setup_id
+        self.folder_id = folder_id
+        self.folder_accounting_id = folder_accounting_id
+        self.folder_setup_id = folder_setup_id
         self._contracts = []
         self._services_type: List[ServiceTypeStatus] = []
         self._status_fecho = status_fecho

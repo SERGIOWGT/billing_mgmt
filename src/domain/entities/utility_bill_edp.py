@@ -73,7 +73,9 @@ class UtilityBillEDP(UtilityBillBase):
         #text = re.sub(r"\s+", " ", text)
 
         # Extrai as informações desejadas do texto
-        cliente = re.search(r"Periodo de faturacao: (.*)\r\n", text).group(1)
+        #_re_aux = re.search(r"Periodo de faturacao: (.*)\r\n", text)
+        #if _re_aux is None:
+        #cliente = _re_aux.group(1)
         
         self.periodo_referencia = self._conv_periodo_faturacao(self._get_data(text, 'Periodo de faturacao:', '\r\n'))
         A = 0

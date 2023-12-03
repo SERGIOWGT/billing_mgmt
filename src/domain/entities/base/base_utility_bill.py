@@ -111,6 +111,14 @@ class UtilityBillBase:
 
         return str_date
 
+    def _get_date_format(self, value: str):
+        value = value.strip()
+        vet = value.split('/')
+        if (len(vet) > 0):
+            if len(vet[0]) > 2:
+                return 'YMD'
+        return 'DMY'
+
     def _adjust_data(self) -> None:
         def _str_2_date(value: str) -> date:
             _dt_retorno = None
@@ -140,13 +148,17 @@ class UtilityBillBase:
         self.periodo_referencia.split('~')
         vet = self.periodo_referencia.split('~')
         if (len(vet) == 2):
-            self.str_inicio_referencia = self._convert_2_default_date(vet[0].strip(), 'DMY', full_month=False)
-            self.str_fim_referencia = self._convert_2_default_date(vet[1].strip(), 'DMY', full_month=False)
+            date_format = self._get_date_format(vet[0].strip())
+            self.str_inicio_referencia = self._convert_2_default_date(vet[0].strip(), date_format, full_month=False)
+            date_format = self._get_date_format(vet[1].strip())
+            self.str_fim_referencia = self._convert_2_default_date(vet[1].strip(), date_format, full_month=False)
         else:
             vet = self.periodo_referencia.upper().split(' A ')
             if (len(vet) == 2):
-                self.str_inicio_referencia = self._convert_2_default_date(vet[0].strip(), 'DMY', full_month=False)
-                self.str_fim_referencia = self._convert_2_default_date(vet[1].strip(), 'DMY', full_month=False)
+                date_format = self._get_date_format(vet[0].strip())
+                self.str_inicio_referencia = self._convert_2_default_date(vet[0].strip(), date_format, full_month=False)
+                date_format = self._get_date_format(vet[1].strip())
+                self.str_fim_referencia = self._convert_2_default_date(vet[1].strip(), date_format, full_month=False)
             else:
                 vet = self.periodo_referencia.split('/')
                 if (len(vet) == 2):

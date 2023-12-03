@@ -2,25 +2,16 @@
 import datetime
 import logging
 import os
-import re
 from src.apps.app import App
 from src.apps.email_app.email_app import EmailApp
 from src.apps.email_app.email_app_dto import EmailAppDto
 from src.apps.send_warning_app import SendWarningApp
-from src.infra.handlers import AppConfigurationReader, ApplicationLogHandler, ApplicationException, GoogleDriveHandler
+from src.infra.handlers import AppConfigurationReader, ApplicationException, GoogleDriveHandler
 from src.infra.handlers.email_sender_handler import EmailSenderHandler
+from src.infra.handlers.log.app_database_log import ApplicationDatabaseLogHandler
 from src.infra.repositorios.accommodation_repository import AccommodationRepository
 from src.infra.repositorios.configuration_repository import ConfigurationRepository
 
-def create_logger(name: str):
-    logging.basicConfig(
-        # filename="logs/output.txt",
-        # filemode="w",
-        level=logging.INFO,
-        format="%(asctime)s:%(levelname)s:%(message)s",
-        datefmt="%Y-%m-%d %I:%M:%S%p",
-    )
-    return logging.getLogger(name)
 
 def get_local_config_info(app_config_reader, key) -> str:
     value = app_config_reader.get(key)
@@ -71,7 +62,8 @@ def configure_initial_paths(log, base_dir):
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    log = ApplicationLogHandler(create_logger(__name__))
+    #log = ApplicationLogHandler(create_logger(__name__))
+    log = ApplicationDatabaseLogHandler(__name__)
 
     email_sender = None
     try:
@@ -88,6 +80,8 @@ if __name__ == '__main__':
 
         log.save_message('Getting remote config information...', execution=True)
         config_repository = get_remote_config_info(accommodation_fileid, drive)
+        email_sender = get_email_sender(config_repo=config_repository)
+        email_list = get_remote_info_from_config(config_repository, 'warning.email.list')
 
         (_, host, user, password) = get_email_credentials(config_repository)
         (input_email_folder, output_email_folder, work_folder_id) = get_email_others_infos(config_repository)
@@ -104,20 +98,20 @@ if __name__ == '__main__':
         accommodation_repo.from_excel(stream_file)
 
         app = App(log, drive=drive, config_repo=config_repository, accommodation_repo=accommodation_repo, accommodation_fileid=accommodation_fileid, local_work_path=local_work_path)
-        not_found_list, exports_file_link = app.execute()
-
+        not_found_list, exports_file_link, permission_error = app.execute()
         active_accs = accommodation_repo.get_activies_id(datetime.datetime.now())
-        email_list = get_remote_info_from_config(config_repository, 'warning.email.list')
+
         days_to_warning = get_remote_info_from_config(config_repository, 'days.to.warning')
         historic_folder_id = drive.extract_id_from_link(get_remote_info_from_config(config_repository, 'googledrive.historic.folderid'))
 
         log.save_message('Connecting email...', execution=True)
-        email_sender = get_email_sender(config_repo=config_repository)
         sender_warning = SendWarningApp(drive=drive, log=log, email_sender=email_sender)
-        sender_warning.execute(not_found_list, active_accs, historic_folder_id,  exports_file_link, email_list, days_to_warning)
+        sender_warning.execute(not_found_list, permission_error, active_accs, historic_folder_id,  exports_file_link, email_list, days_to_warning)
 
     except Exception as error:
+        log.save_message(str(error), error=True)
         if email_sender:
-            email_sender.send('robotqd23@gmail.com', 'sergiowgt@gmail.com', 'Exception error', str(error))
-
-        raise error
+            for email_address in email_list.split(','):
+                email_sender.send('robotqd23@gmail.com', email_address, 'Execution error', str(error))
+        else:
+            raise error

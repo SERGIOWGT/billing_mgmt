@@ -13,6 +13,7 @@ class UtilityBillBaseResponse():
 @dataclass
 class UtilityBillErrorBaseResponse(UtilityBillBaseResponse):
     error_type: str = ''
+    first_time: datetime = None
 
 @dataclass
 class UtilityBillIgnoredResponse(UtilityBillErrorBaseResponse):

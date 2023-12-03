@@ -12,7 +12,7 @@ class SendWarningApp:
         self._log = log
         self._drive = drive
         self._email_sender = email_sender
-        
+
     def _make_email(self, list, _to, subject, body, export_file_link: str):
         if len(list) == 0:
             subject += '- SEM REGISTROS'
@@ -36,7 +36,7 @@ class SendWarningApp:
 
         return subject, body
 
-    def execute(self, not_found_list:  List[UtilityBillErrorBaseResponse], active_accs: List[str], historic_folder_id: str, exports_file_link: str, email_list: str, days_to_warning: str):
+    def execute(self, not_found_list:  List[UtilityBillErrorBaseResponse], permission_error: List[str], active_accs: List[str], historic_folder_id: str, exports_file_link: str, email_list: str, days_to_warning: str):
         email_body = []
         if len(not_found_list) > 0:
             email_body.append(('LISTA DE FATURAS SEM ALOJAMENTOS', [f'{self._drive.make_google_link(x.google_file_id)}' for x in not_found_list]))
@@ -51,6 +51,9 @@ class SendWarningApp:
 
         erro1 = paid_repo.get_last_discontinuous_period(active_accs)
         erro2 = paid_repo.get_possible_faults(days=days_to_warning, active_accommodations=active_accs)
+        if (len(permission_error) > 0):
+            email_body.append(('ALOJAMENTOS COM PROBLEMAS DE PERMISSIONAMENTO', permission_error))
+
         if len(erro1) > 0:
             email_body.append(('ALOJAMENTOS COM DESCONTINUIDADE NO RECEBIMENTO DAS CONTAS', erro1))
 

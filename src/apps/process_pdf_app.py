@@ -7,8 +7,8 @@ from src.domain.entities.response_error import UtilityBillDuplicatedResponse, Ut
 from src.domain.enums import DocumentTypeEnum, ServiceProviderEnum
 from src.infra.handlers import ApplicationException, GoogleDriveHandler, PdfExtractorHandler
 from src.infra.repositorios import AccommodationRepository, ExceptionRepository, PaidBillRepository
+from src.infra.repositorios.recorring_errors_repository import RecorringErrorsRepository
 from src.services import ResultsSaver, ResultsUploader, UtilityBillFactory
-
 
 @dataclass
 class ProcessPdfApp:
@@ -26,7 +26,7 @@ class ProcessPdfApp:
     _exports_file_id = ''
     _all_lists = []
 
-    def __init__(self, drive: GoogleDriveHandler, log, accommodations_repo: AccommodationRepository, paid_repo: PaidBillRepository, exception_repo: ExceptionRepository):
+    def __init__(self, drive: GoogleDriveHandler, log, accommodations_repo: AccommodationRepository, paid_repo: PaidBillRepository, exception_repo: ExceptionRepository, recorring_errors_repo: RecorringErrorsRepository):
         ApplicationException.when(log is None, 'Log não iniciado.')
         ApplicationException.when(drive is None, 'Google Drive não iniciado.', log)
         self._drive = drive
@@ -51,6 +51,22 @@ class ProcessPdfApp:
         self._accommodations_repo = accommodations_repo
         self._paid_repo = paid_repo
         self._exception_repo = exception_repo
+        self._recorring_errors_repo = recorring_errors_repo
+
+    def has_errors(self) -> bool:
+        if len(self._error_list) > 0:
+            return True
+        if len(self._ignored_list) > 0:
+            return True
+        if len(self._not_found_list) > 0:
+            return True
+        if len(self._duplicate_list) > 0:
+            return True
+        if len(self._expired_list) > 0:
+            return True
+        if len(self._setup_list) > 0:
+            return True
+        return False
 
     def _service_provider_2_str(self, id: ServiceProviderEnum) -> str:
         if (id == ServiceProviderEnum.EDP):
@@ -79,6 +95,15 @@ class ProcessPdfApp:
         def process_file(all_text: str, file_name: str, file_id: str):
             conta_consumo = UtilityBillFactory().execute(all_text)
             if (conta_consumo):
+                if all_text.count('@') > 1000:
+                    self._error_list.append(UtilityBillErrorResponse(error_type='PDF_COMO_IMAGEM(CHAR=@)', email_file_id=file_id, google_file_id='',
+                                file_name=file_name, utility_bill=conta_consumo))
+                    return
+                if all_text.count('†') > 50:
+                    self._error_list.append(UtilityBillErrorResponse(error_type='PDF_COMO_IMAGEM(CHAR=†)', email_file_id=file_id, google_file_id='',
+                                file_name=file_name, utility_bill=conta_consumo))
+                    return
+                
                 try:
                     conta_consumo.create(all_text)
                     if conta_consumo.tipo_documento == DocumentTypeEnum.DETALHE_FATURA:
@@ -118,7 +143,7 @@ class ProcessPdfApp:
                 #str_aux = '_'
                 #if (file_name[0:len(str_aux)].upper() != str_aux):
                 #   continue
-                #if (count > 50):  break
+                #if (count > 2):  break
 
                 self._log.save_message(f'Getting file: {file_name} ({file_id}) ({count}/{total})')
                 file_content = self._drive.get_file(file_id)
@@ -210,15 +235,26 @@ class ProcessPdfApp:
                                                                      file_name=file.file_name, utility_bill=actual_bill))
                 continue
 
-            actual_bill.id_alojamento = accomm_aux._id
-            actual_bill.folder_id = accomm_aux._folder_id
-            actual_bill.folder_accounting_id = accomm_aux._folder_accounting_id.strip()
-            actual_bill.folder_setup_id = accomm_aux._folder_setup_id.strip()
+            actual_bill.id_alojamento = accomm_aux.id
+            actual_bill.folder_id = accomm_aux.folder_id
+            actual_bill.folder_accounting_id = accomm_aux.folder_accounting_id.strip()
+            actual_bill.folder_setup_id = accomm_aux.folder_setup_id.strip()
+            
+            if actual_bill.folder_id:
+                if accomm_aux.folder_permission_error is True:
+                    self._error_list.append(UtilityBillErrorResponse(error_type='SEM_PERMISSAO_DIRETORIO_CLIENTE', email_file_id=file.email_file_id, google_file_id='',
+                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                    continue
 
             _work_date = actual_bill.dt_vencimento if actual_bill.dt_vencimento else actual_bill.dt_emissao
             if accomm_aux.in_setup(_work_date):
                 if actual_bill.folder_setup_id == '':
                     self._error_list.append(UtilityBillErrorResponse(error_type='EM_SETUP_SEM_DIRETORIO', email_file_id=file.email_file_id, google_file_id='',
+                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                    continue
+                
+                if accomm_aux.folder_setup_permission_error:
+                    self._error_list.append(UtilityBillErrorResponse(error_type='SEM_PERMISSAO_DIRETORIO_SETUP', email_file_id=file.email_file_id, google_file_id='',
                                                                      file_name=file.file_name, utility_bill=actual_bill))
                     continue
                 
@@ -247,6 +283,11 @@ class ProcessPdfApp:
 
             # verifica se a conta deve ir para  conciliacao
             actual_bill.is_accounting = accomm_aux.is_must_accounting(actual_bill.tipo_servico)
+            if actual_bill.is_accounting is True:
+                if accomm_aux.folder_accounting_permission_error is True:
+                    self._error_list.append(UtilityBillErrorResponse(error_type='SEM_PERMISSAO_DIRETORIO_CONCILIACAO', email_file_id=file.email_file_id, google_file_id='',
+                                                                     file_name=file.file_name, utility_bill=actual_bill))
+                    continue
 
             is_rateio = self._handler_possible_exception(file)
             if is_rateio:
@@ -308,16 +349,17 @@ class ProcessPdfApp:
         self._log.save_message(f'{len(self._duplicate_list)} duplicate file(s)', execution=True)
         self._log.save_message(f'{len(self._ignored_list)} ignored file(s)', execution=True)
 
-    def _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, payments_file_id):
+    def _export_results(self, temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, payments_file_id, recorring_errors_file_id):
         now = datetime.datetime.now()
         str_datetime = now.strftime("%Y-%m-%d_%H_%M_%S")
         exports_file_path = os.path.join(temp_dir,  f'OUTPUT_SAVED_AT_{str_datetime}.xlsx')
         qd28_file_path = os.path.join(temp_dir,  f'#QD28_IMPORTACAO_ROBOT_SAVED_AT_{str_datetime}.xlsx')
         paid_bill_file_path = os.path.join(temp_dir,  'DATABASE.xlsx')
+        recorring_errors_file_path = os.path.join(temp_dir,  'HISTORIC_ERRORS.xlsx')
 
         self._log.save_message('Saving the worksheets', execution=True)
         saver = ResultsSaver(self._log, self._drive)
-        saver.execute(exports_file_path, qd28_file_path, paid_bill_file_path, self._all_lists, payments_file_id)
+        saver.execute(exports_file_path, qd28_file_path, paid_bill_file_path, recorring_errors_file_path, self._all_lists, payments_file_id, recorring_errors_file_id)
 
         uploader = ResultsUploader(self._log, self._drive)
         self._log.save_message('Upload export file', execution=True)
@@ -331,18 +373,36 @@ class ProcessPdfApp:
             self._log.save_message('Upload historical payments file', execution=True)
             uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=paid_bill_file_path, save_previous=True)
 
-    def execute(self, temp_dir: str, email_local_folder: str,  work_folder_id: str, others_folder_base_id: str, exports_folder_id: str, historic_folder_id: str, qd28_folder_id: str, payments_file_id: str):
+        if self.has_errors() > 0:
+            self._log.save_message('Upload recorring errors file', execution=True)
+            uploader.upload_excelfile(folder_results_id=historic_folder_id, file_path=recorring_errors_file_path, save_previous=True)
+
+    def _mark_first_time_error(self):
+        def _execute(list):
+            for el in list:
+                ret = self._recorring_errors_repo.get_first(el.file_name)
+                if ret:
+                    el.first_time = ret.date
+        _execute(self._error_list)
+        _execute(self._not_found_list)
+        _execute(self._setup_list)
+        _execute(self._duplicate_list)
+        _execute(self._expired_list)
+
+    def execute(self, temp_dir: str, email_local_folder: str,  work_folder_id: str, others_folder_base_id: str, exports_folder_id: str, historic_folder_id: str, qd28_folder_id: str, payments_file_id: str, recorring_errors_file_id: str):
         # Aqui le os arquivos e os separa em com erro, ignorados e em analise
         self._read_files(work_folder_id, email_local_folder)
 
         # Criar uma rotina que pega os arquivos em análise e joga nas listas corretas od já recebidos e arquivados, duplicados, com erro, e nos avisos do clovis
         self._check_utilities_bill()
 
+        self._mark_first_time_error()
+
         # Rotina para subir os arquivos das contas(igual do antigo)
         self._upload_files(others_folder_base_id)
 
         # Rotina para subir os arquivos de resultados (igual ao antigo)
-        self._export_results(temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, payments_file_id)
+        self._export_results(temp_dir, exports_folder_id, historic_folder_id, qd28_folder_id, payments_file_id, recorring_errors_file_id)
 
         # Rotina para para excluir os emails
         self._clean_email_folder()
