@@ -46,7 +46,7 @@ class UtilityBillAguasDeCascais(UtilityBillBase):
 			self.id_documento = self._get_data(text, '\r\nFT', '\r\nData de Emiss')
 
 		def _get_data_vencimento(self, text) -> None:
-			self.str_vencimento = self._get_data(text, 'FATURA No:\r\n', '\r\nATCUD')
+			self.str_vencimento = self._get_data(text, 'A PAGAR ATE ', '\r\n')
 			self.str_vencimento = self._convert_2_default_date(self.str_vencimento, 'DMY')
 
 		def _get_valor(self, text) -> None:

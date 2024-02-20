@@ -225,7 +225,7 @@ class UtilityBillBase:
         if self.id_alojamento == '':
             return ''
 
-        _name_list = ['', 'EDP', 'Galp', 'Aguas', 'Aguas', 'EPAL', 'Altice(MEO)', 'NOS', 'Vodafone']
+        _name_list = ['', 'EDP', 'Galp', 'Aguas', 'Aguas', 'EPAL', 'Altice(MEO)', 'NOS', 'Vodafone', 'Golden', 'Aguas']
         _concessionaria = _name_list[self.concessionaria]
         _vet = self.id_alojamento.split('_')
         _alojamento = self.id_alojamento

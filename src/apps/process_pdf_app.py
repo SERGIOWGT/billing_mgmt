@@ -140,10 +140,13 @@ class ProcessPdfApp:
                 count = count + 1
                 file_id = file['id']
                 file_name = file['name']
+                #if (count > 50):
+                #    continue
                 #str_aux = '_'
                 #if (file_name[0:len(str_aux)].upper() != str_aux):
                 #   continue
-                #if (count > 2):  break
+                #if (file_name != '2023_10_18_23_44_42_80_from_202310897682.PDF'):
+                #    continue
 
                 self._log.save_message(f'Getting file: {file_name} ({file_id}) ({count}/{total})')
                 file_content = self._drive.get_file(file_id)

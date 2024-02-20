@@ -25,6 +25,8 @@ class AccommodationRepository:
             return ServiceProviderEnum.AGUAS_DE_PORTO
         if (name == '#AGUAS_GAIA'):
             return ServiceProviderEnum.AGUAS_DE_GAIA
+        if (name == '#AGUAS_CASCAIS'):
+            return ServiceProviderEnum.AGUAS_DE_CASCAIS
         if (name == '#ALTICE'):
             return ServiceProviderEnum.ALTICE_MEO
         if (name == '#VODAFONE'):
@@ -156,6 +158,11 @@ class AccommodationRepository:
                 instalacao = get_el(str(df.iat[row, (first_col_id+4) + (7 * indx)]))
                 referencia = get_el(str(df.iat[row, (first_col_id+5) + (7 * indx)]))
                 servico = get_el(str(df.iat[row, (first_col_id+6) + (7 * indx)]))
+                
+                if  name == '#AGUAS_CASCAIS':
+                    if local_consumo:
+                        a = 0
+                    
 
                 contract_aux = Contract(id_service_provide=self._str_2_provider(name),
                                         cliente=cliente,
@@ -173,9 +180,13 @@ class AccommodationRepository:
                 self._accommodations.append(acc_aux)
 
     def get(self, concessionaria, cliente: str, conta: str, contrato: str, local: str, instalacao: str) -> Accommodation2:
+        if concessionaria == ServiceProviderEnum.AGUAS_DE_CASCAIS:
+            b = 0
+        
         for acc in self._accommodations:
-            if acc.id == 'JH_Conceicao67_22':
+            if acc.id == 'AR_Payzinho50_6Es':
                 a = 0
+      
 
             for el in acc._contracts:
                 if el.is_you(concessionaria, cliente, conta, contrato, local, instalacao):

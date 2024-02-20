@@ -66,52 +66,52 @@ if __name__ == '__main__':
     log = ApplicationDatabaseLogHandler(__name__)
 
     email_sender = None
-    try:
-        config_path, config_file_path, local_work_path = configure_initial_paths(log, base_dir)
-        app_config_reader = AppConfigurationReader(config_file_path)
-        ApplicationException.when(not os.path.exists(local_work_path), f'Path does not exist. [{local_work_path}]')
+    #try:
+    config_path, config_file_path, local_work_path = configure_initial_paths(log, base_dir)
+    app_config_reader = AppConfigurationReader(config_file_path)
+    ApplicationException.when(not os.path.exists(local_work_path), f'Path does not exist. [{local_work_path}]')
 
-        log.save_message('Connecting google drive....', execution=True)
-        drive = GoogleDriveHandler(config_path)
+    log.save_message('Connecting google drive....', execution=True)
+    drive = GoogleDriveHandler(config_path)
 
-        log.save_message('Getting local configuration repository....', execution=True)
-        accommodation_fileid = get_local_config_info(app_config_reader, 'google_drive_accommodation_fileid') or ''
-        ApplicationException.when(accommodation_fileid == '', "'accommodation_fileid' does not exist or empty.")
+    log.save_message('Getting local configuration repository....', execution=True)
+    accommodation_fileid = get_local_config_info(app_config_reader, 'google_drive_accommodation_fileid') or ''
+    ApplicationException.when(accommodation_fileid == '', "'accommodation_fileid' does not exist or empty.")
 
-        log.save_message('Getting remote config information...', execution=True)
-        config_repository = get_remote_config_info(accommodation_fileid, drive)
-        email_sender = get_email_sender(config_repo=config_repository)
-        email_list = get_remote_info_from_config(config_repository, 'warning.email.list')
+    log.save_message('Getting remote config information...', execution=True)
+    config_repository = get_remote_config_info(accommodation_fileid, drive)
+    email_sender = get_email_sender(config_repo=config_repository)
+    email_list = get_remote_info_from_config(config_repository, 'warning.email.list')
 
-        (_, host, user, password) = get_email_credentials(config_repository)
-        (input_email_folder, output_email_folder, work_folder_id) = get_email_others_infos(config_repository)
-        work_folder_id = drive.extract_id_from_link(work_folder_id)
-        email_app_dto = EmailAppDto(imap_server=host, user=user, password=password, input_email_folder=input_email_folder,
-                                    output_email_folder=output_email_folder, temp_dir=local_work_path, work_folder_id=work_folder_id)
+    (_, host, user, password) = get_email_credentials(config_repository)
+    (input_email_folder, output_email_folder, work_folder_id) = get_email_others_infos(config_repository)
+    work_folder_id = drive.extract_id_from_link(work_folder_id)
+    email_app_dto = EmailAppDto(imap_server=host, user=user, password=password, input_email_folder=input_email_folder,
+                                output_email_folder=output_email_folder, temp_dir=local_work_path, work_folder_id=work_folder_id)
 
-        email_app = EmailApp()
-        email_app.execute(drive, log, email_app_dto)
+    email_app = EmailApp()
+    email_app.execute(drive, log, email_app_dto)
 
-        log.save_message('Getting accommodation repository....', execution=True)
-        stream_file = drive.get_google_sheets_file(accommodation_fileid)
-        accommodation_repo = AccommodationRepository()
-        accommodation_repo.from_excel(stream_file)
+    log.save_message('Getting accommodation repository....', execution=True)
+    stream_file = drive.get_google_sheets_file(accommodation_fileid)
+    accommodation_repo = AccommodationRepository()
+    accommodation_repo.from_excel(stream_file)
 
-        app = App(log, drive=drive, config_repo=config_repository, accommodation_repo=accommodation_repo, accommodation_fileid=accommodation_fileid, local_work_path=local_work_path)
-        not_found_list, exports_file_link, permission_error = app.execute()
-        active_accs = accommodation_repo.get_activies_id(datetime.datetime.now())
+    app = App(log, drive=drive, config_repo=config_repository, accommodation_repo=accommodation_repo, accommodation_fileid=accommodation_fileid, local_work_path=local_work_path)
+    not_found_list, exports_file_link, permission_error = app.execute()
+    active_accs = accommodation_repo.get_activies_id(datetime.datetime.now())
 
-        days_to_warning = get_remote_info_from_config(config_repository, 'days.to.warning')
-        historic_folder_id = drive.extract_id_from_link(get_remote_info_from_config(config_repository, 'googledrive.historic.folderid'))
+    days_to_warning = get_remote_info_from_config(config_repository, 'days.to.warning')
+    historic_folder_id = drive.extract_id_from_link(get_remote_info_from_config(config_repository, 'googledrive.historic.folderid'))
 
-        log.save_message('Connecting email...', execution=True)
-        sender_warning = SendWarningApp(drive=drive, log=log, email_sender=email_sender)
-        sender_warning.execute(not_found_list, permission_error, active_accs, historic_folder_id,  exports_file_link, email_list, days_to_warning)
+    log.save_message('Connecting email...', execution=True)
+    sender_warning = SendWarningApp(drive=drive, log=log, email_sender=email_sender)
+    sender_warning.execute(not_found_list, permission_error, active_accs, historic_folder_id,  exports_file_link, email_list, days_to_warning)
 
-    except Exception as error:
-        log.save_message(str(error), error=True)
-        if email_sender:
-            for email_address in email_list.split(','):
-                email_sender.send('robotqd23@gmail.com', email_address, 'Execution error', str(error))
-        else:
-            raise error
+    #except Exception as error:
+    #    log.save_message(str(error), error=True)
+    #    if email_sender:
+    #        for email_address in email_list.split(','):
+    #            email_sender.send('robotqd23@gmail.com', email_address, 'Execution error', str(error))
+    #    else:
+    #        raise error

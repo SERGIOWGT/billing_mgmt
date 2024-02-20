@@ -50,7 +50,10 @@ class Contract:
     def is_you(self, concessionaria: ServiceProviderEnum, cliente: str, conta: str, contrato: str, local: str, instalacao: str) -> bool:
         if self._id_service_provide != concessionaria:
             return False
-
+            
+        if concessionaria == ServiceProviderEnum.AGUAS_DE_CASCAIS:
+            a = 0
+        
         teve_teste = False
         if len(self._vet_cliente) > 0 and cliente:
             teve_teste = True
